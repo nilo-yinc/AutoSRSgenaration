@@ -351,3 +351,31 @@ textarea:valid:not(:placeholder-shown),
 select:valid:not(:placeholder-shown) {
     border-color: var(--success-color);
 }
+
+/* Success box after SRS generation */
+.srs-success-box {
+    margin: 2rem;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid var(--success-color);
+    border-radius: 12px;
+    text-align: center;
+}
+.srs-success-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #065f46;
+    margin-bottom: 0.5rem;
+}
+.srs-success-path {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    word-break: break-all;
+}
+.srs-download-btn {
+    display: inline-block;
+    text-decoration: none;
+    padding: 0.6rem 1.25rem;
+    margin-top: 0.25rem;
+}
