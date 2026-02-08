@@ -1,0 +1,13 @@
+google-adk
+litellm
+pydantic
+typing_extensions
+aiosqlite
+yfinance
+python-docx
+fastapi[standard]
+uvicorn[standard]
+jinja2
+python-multipart
+docx2pdf
+requests
