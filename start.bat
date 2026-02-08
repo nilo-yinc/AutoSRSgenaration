@@ -51,14 +51,11 @@ if not exist ".env" (
     exit /b 1
 )
 
-REM Check if mmdc is installed
+REM Mermaid CLI optional when TEXT_ONLY=1 in .env
 where mmdc >nul 2>&1
 if errorlevel 1 (
-    echo WARNING: Mermaid CLI not found!
-    echo Please install it: npm install -g @mermaid-js/mermaid-cli
+    echo NOTE: Mermaid CLI not found. OK if TEXT_ONLY=1 in .env (text-only mode).
     echo.
-    pause
-    exit /b 1
 )
 
 echo ========================================
