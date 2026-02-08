@@ -32,6 +32,7 @@ class SRSDocumentGenerator:
         self.authors = authors if authors else ["Author Name"]
         self.organization = organization
         self.doc = Document()
+        self.image_paths = {}  # set before adding sections; may include system_context, system_architecture, use_case, user_workflow, security_flow, data_erd
         self._setup_document()
         self._setup_styles()
         
@@ -227,8 +228,7 @@ class SRSDocumentGenerator:
         self.doc.add_section()
     
     def _add_table_of_contents(self):
-        """Add Table of Contents after the title page."""
-        # Add TOC heading
+        """Add Table of Contents after the title page. Static list visible in any viewer."""
         toc_heading = self.doc.add_paragraph()
         toc_heading.style = 'TOC Heading'
         run = toc_heading.add_run("Table of Contents")
@@ -237,56 +237,55 @@ class SRSDocumentGenerator:
         run.font.bold = True
         toc_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
         toc_heading.paragraph_format.space_after = Pt(18)
-        
-        # Add TOC field with proper structure
-        paragraph = self.doc.add_paragraph()
-        run = paragraph.add_run()
-        
-        # Create the field start
-        fldChar_begin = OxmlElement('w:fldChar')
-        fldChar_begin.set(qn('w:fldCharType'), 'begin')
-        
-        # Create the instruction text
-        instrText = OxmlElement('w:instrText')
-        instrText.set(qn('xml:space'), 'preserve')
-        instrText.text = 'TOC \\o "1-3" \\h \\z \\u'
-        
-        # Create the field separator
-        fldChar_separate = OxmlElement('w:fldChar')
-        fldChar_separate.set(qn('w:fldCharType'), 'separate')
-        
-        # Add the field elements to the run
-        run._r.append(fldChar_begin)
-        run._r.append(instrText)
-        run._r.append(fldChar_separate)
-        
-        # Add placeholder text (will be replaced when field is updated)
-        run._r.append(OxmlElement('w:t'))
-        
-        # Create the field end
-        fldChar_end = OxmlElement('w:fldChar')
-        fldChar_end.set(qn('w:fldCharType'), 'end')
-        run._r.append(fldChar_end)
-        
-        # Set update fields on open flag in document settings
-        self._set_update_fields_on_open()
-        
-        # Add instructional text
-        instruction = self.doc.add_paragraph()
-        instruction_run = instruction.add_run(
-            "\n[Note: The Table of Contents will be automatically generated when you open this document in Microsoft Word. "
-            "If it doesn't appear, right-click and select 'Update Field']"
+
+        # Proper SRS structure (IEEE-style) with diagram placeholders
+        toc_entries = [
+            "1. Introduction",
+            "    1.1 Purpose",
+            "    1.2 Scope of the System",
+            "    1.3 Definitions, Acronyms, and Abbreviations",
+            "2. Overall Description",
+            "    2.1 Product Perspective (System Context Diagram)",
+            "    2.2 Product Functions",
+            "    2.3 User Classes and Characteristics",
+            "    2.4 Operating Environment",
+            "    2.5 Design and Implementation Constraints",
+            "3. System Architecture (Architecture Diagram)",
+            "4. Functional Requirements (Use Case Diagram)",
+            "5. User Workflow (Workflow Diagram)",
+            "6. Non-Functional Requirements",
+            "7. Security Requirements (Security Flow Diagram)",
+            "8. Data Requirements (Entity Relationship Diagram)",
+            "9. External Interface Requirements",
+            "    9.1 User Interface",
+            "    9.2 Application Programming Interfaces",
+            "10. Assumptions and Dependencies",
+            "11. Future Enhancements",
+        ]
+        for entry in toc_entries:
+            p = self.doc.add_paragraph(entry)
+            p.style = 'Normal'
+            p.paragraph_format.left_indent = Pt(0 if not entry.startswith("    ") else 24)
+            p.paragraph_format.space_before = Pt(3)
+            p.paragraph_format.space_after = Pt(3)
+            for r in p.runs:
+                r.font.name = 'Arial'
+                r.font.size = Pt(11)
+
+        # Optional: in Word, right-click and "Update Field" on a TOC field for page numbers
+        note = self.doc.add_paragraph()
+        note_run = note.add_run(
+            "In Microsoft Word you can insert an automatic TOC (References → Table of Contents) for page numbers."
         )
-        instruction_run.font.italic = True
-        instruction_run.font.size = Pt(10)
-        instruction_run.font.color.rgb = RGBColor(128, 128, 128)
-        instruction.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        
-        # Add section break (new page) after TOC and restart page numbering
+        note_run.font.italic = True
+        note_run.font.size = Pt(9)
+        note_run.font.color.rgb = RGBColor(128, 128, 128)
+        note.paragraph_format.space_before = Pt(12)
+        note.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Section break (new page) after TOC
         new_section = self.doc.add_section()
-        
-        # Set page numbering to start at 1 for content section
-        new_section.start_type = 2  # New page
+        new_section.start_type = 2
         new_section.page_number_start = 1
     
     def _set_update_fields_on_open(self):
@@ -322,46 +321,42 @@ class SRSDocumentGenerator:
         self.doc.add_heading(purpose.get('title', '1.1 Purpose'), level=2)
         self.doc.add_paragraph(purpose.get('description', ''))
         
-        # 1.2 Intended Audience
-        audience = intro_data.get('intended_audience', {})
-        self.doc.add_heading(audience.get('title', '1.2 Intended Audience'), level=2)
-        audience_groups = audience.get('audience_groups', [])
-        if audience_groups:
-            para = self.doc.add_paragraph("This document is intended for:")
-            for group in audience_groups:
-                self.doc.add_paragraph(group, style='List Bullet')
-        
-        # 1.3 Project Scope
+        # 1.2 Scope of the System
         scope = intro_data.get('project_scope', {})
-        self.doc.add_heading(scope.get('title', '1.3 Project Scope'), level=2)
-        
+        self.doc.add_heading('1.2 Scope of the System', level=2)
+        scope_desc = scope.get('description') or "The system provides a centralized platform for core business operations with secure access, reporting, and monitoring. Features outside the specified requirements are excluded from this version."
+        self.doc.add_paragraph(scope_desc)
         included = scope.get('included', [])
         if included:
             self.doc.add_paragraph("Included in scope:", style='Heading 3')
             for item in included:
                 self.doc.add_paragraph(item, style='List Bullet')
-        
         excluded = scope.get('excluded', [])
         if excluded:
             self.doc.add_paragraph("Excluded from scope:", style='Heading 3')
             for item in excluded:
                 self.doc.add_paragraph(item, style='List Bullet')
         
-        # 1.4 Document Conventions
-        conventions = intro_data.get('document_conventions', {})
-        self.doc.add_heading(conventions.get('title', '1.4 Document Conventions'), level=2)
-        conv_list = conventions.get('conventions', [])
-        for conv in conv_list:
-            self.doc.add_paragraph(conv, style='List Bullet')
+        # 1.3 Definitions, Acronyms, and Abbreviations
+        self.doc.add_heading('1.3 Definitions, Acronyms, and Abbreviations', level=2)
+        for term, defn in [("SRS", "Software Requirements Specification"), ("RBAC", "Role-Based Access Control"), ("CRUD", "Create, Read, Update, Delete"), ("UI", "User Interface"), ("API", "Application Programming Interface")]:
+            self.doc.add_paragraph(f"{term} – {defn}", style='List Bullet')
         
-        # 1.5 References
+        # 1.4 Document Conventions (optional)
+        conventions = intro_data.get('document_conventions', {})
+        if conventions.get('conventions'):
+            self.doc.add_heading(conventions.get('title', '1.4 Document Conventions'), level=2)
+            for conv in conventions.get('conventions', []):
+                self.doc.add_paragraph(conv, style='List Bullet')
+        
+        # 1.5 References (optional)
         references = intro_data.get('references', {})
-        self.doc.add_heading(references.get('title', '1.5 References'), level=2)
-        ref_list = references.get('references', [])
-        for ref in ref_list:
-            ref_id = ref.get('id', '')
-            ref_desc = ref.get('description', '')
-            self.doc.add_paragraph(f"{ref_id}: {ref_desc}", style='List Bullet')
+        if references.get('references'):
+            self.doc.add_heading(references.get('title', '1.5 References'), level=2)
+            for ref in references.get('references', []):
+                ref_id = ref.get('id', '')
+                ref_desc = ref.get('description', '')
+                self.doc.add_paragraph(f"{ref_id}: {ref_desc}", style='List Bullet')
     
     def add_overall_description_section(self, desc_data: Dict[str, Any]):
         """
@@ -377,6 +372,14 @@ class SRSDocumentGenerator:
         perspective = desc_data.get('product_perspective', {})
         self.doc.add_heading(perspective.get('title', '2.1 Product Perspective'), level=2)
         self.doc.add_paragraph(perspective.get('description', ''))
+        path = self.image_paths.get('system_context')
+        if path and Path(path).exists():
+            self.doc.add_paragraph("The System Context Diagram illustrating interactions between the system and external entities has been added above.", style='Heading 3')
+            self.doc.add_picture(str(path), width=Inches(5.5))
+            last_paragraph = self.doc.paragraphs[-1]
+            last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        else:
+            self.doc.add_paragraph("Note: The System Context Diagram illustrating interactions between the system and external entities can be added above.", style='Heading 3')
         
         # 2.2 Product Features
         features = desc_data.get('product_features', {})
