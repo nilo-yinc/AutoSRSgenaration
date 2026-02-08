@@ -62,4 +62,7 @@ echo "Server will be available at: http://127.0.0.1:8000"
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-uvicorn srs_engine.main:app --reload
+# Start Node Backend in background
+(cd backend && npm install && node server.js) &
+
+uvicorn backend.beta.main:app --reload

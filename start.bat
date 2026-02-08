@@ -65,6 +65,8 @@ echo Server will be available at: http://127.0.0.1:8000
 echo Press Ctrl+C to stop the server
 echo.
 
-uvicorn srs_engine.main:app --reload
+start "DocuVerse Node Backend" cmd /k "echo Starting Backend... && cd backend && npm install && node server.js || echo BACKEND FAILED - CHECK ERROR ABOVE"
+
+uvicorn backend.beta.main:app --reload
 
 pause
