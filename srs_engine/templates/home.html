@@ -317,6 +317,13 @@
                 <button type="submit" class="btn btn-primary">Generate SRS</button>
             </div>
         </form>
+
+        <!-- Success message with download link (hidden until generation succeeds) -->
+        <div id="srsSuccessBox" class="srs-success-box" style="display: none;">
+            <p class="srs-success-title">SRS generated successfully!</p>
+            <p class="srs-success-path" id="srsSuccessPath"></p>
+            <a id="srsDownloadLink" href="#" class="btn btn-primary srs-download-btn" download>Download SRS document</a>
+        </div>
     </div>
 
     <script src="{{ url_for('static', path='home.js') }}"></script>
