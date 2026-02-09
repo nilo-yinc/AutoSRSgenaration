@@ -4,6 +4,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-latest-green.svg)
+
 ![Gemini](https://img.shields.io/badge/Gemini-Pro-orange.svg)
 
 **AI-powered automated Software Requirements Specification (SRS) document generator with architecture diagrams**
@@ -29,9 +30,12 @@ An intelligent multi-agent system that automates SRS creation using **Google Gem
 
 ## 📸 Screenshots
 
-![Web Interface](image-3.png)
-![Web Interface](image-4.png)
-![Web Interface](image-5.png)
+<img width="450" height="946" alt="image" src="https://github.com/user-attachments/assets/0996958c-390c-4ac2-b027-33b867c68641" />
+<img width="1916" height="935" alt="image" src="https://github.com/user-attachments/assets/3dd14274-f827-42b9-949f-3e7c58bca7e4" />
+
+
+<img width="1904" height="1031" alt="Screenshot 2026-02-09 095326" src="https://github.com/user-attachments/assets/2423ad7d-cbb3-4784-834f-f3b40da7b15c" />
+
 
 ---
 
