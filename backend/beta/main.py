@@ -643,93 +643,162 @@ async def generate_srs(
     image_paths = _build_image_paths(project_key)
     _set_progress(project_key, "init", 5, "Initializing generation...")
 
-    if mode == "instant":
-        # Fastest path: no live Mermaid rendering in request cycle.
-        _set_progress(project_key, "content", 20, "Preparing baseline content...")
-        sections = build_minimal_sections(inputs)
-        sections["external_interfaces_section"] = clean_interface_diagrams(sections.get("external_interfaces_section", {}))
-        instant_image_paths = {}
-        for k in ["system_context", "system_architecture"]:
-            p = image_paths.get(k)
-            if p and Path(p).is_file():
-                instant_image_paths[k] = p
+    try:
+        if mode == "instant":
+            # Fastest path: no live Mermaid rendering in request cycle.
+            _set_progress(project_key, "content", 20, "Preparing baseline content...")
+            sections = build_minimal_sections(inputs)
+            sections["external_interfaces_section"] = clean_interface_diagrams(sections.get("external_interfaces_section", {}))
+            instant_image_paths = {}
+            for k in ["system_context", "system_architecture"]:
+                p = image_paths.get(k)
+                if p and Path(p).is_file():
+                    instant_image_paths[k] = p
 
-        try:
-            _set_progress(project_key, "doc", 70, "Building DOCX file...")
-            generated_path = _generate_document(
-                project_name, project_key, inputs, sections, instant_image_paths, "instant"
-            )
-            _set_progress(
-                project_key,
-                "completed",
-                100,
-                "Instant document ready.",
-                status="completed",
-                download_url=f"/download_srs/{Path(generated_path).name}",
-                mode="instant",
-            )
-            background_tasks.add_task(_generate_enhanced_background, inputs, project_name, project_key)
-            return {
-                "status": "success",
-                "mode": "instant",
-                "message": "Instant SRS generated. Enhanced version is being prepared in background.",
-                "srs_document_path": generated_path,
-                "download_url": f"/download_srs/{Path(generated_path).name}",
-                "enhanced_status_url": f"/srs_status/{project_key}",
-                "enhanced_download_url": f"/download_srs/{Path(_output_path(project_key, 'enhanced')).name}",
-            }
-        except Exception as e:
-            print(f"❌ Instant Document Generation Failed: {e}")
-            import traceback
-            traceback.print_exc()
-            _set_progress(project_key, "failed", 100, str(e), status="failed")
-            raise HTTPException(status_code=500, detail=str(e))
+            try:
+                _set_progress(project_key, "doc", 70, "Building DOCX file...")
+                generated_path = _generate_document(
+                    project_name, project_key, inputs, sections, instant_image_paths, "instant"
+                )
+                _set_progress(
+                    project_key,
+                    "completed",
+                    100,
+                    "Instant document ready.",
+                    status="completed",
+                    download_url=f"/download_srs/{Path(generated_path).name}",
+                    mode="instant",
+                )
+                background_tasks.add_task(_generate_enhanced_background, inputs, project_name, project_key)
+                return {
+                    "status": "success",
+                    "mode": "instant",
+                    "message": "Instant SRS generated. Enhanced version is being prepared in background.",
+                    "srs_document_path": generated_path,
+                    "download_url": f"/download_srs/{Path(generated_path).name}",
+                    "enhanced_status_url": f"/srs_status/{project_key}",
+                    "enhanced_download_url": f"/download_srs/{Path(_output_path(project_key, 'enhanced')).name}",
+                }
+            except Exception as e:
+                print(f"❌ Instant Document Generation Failed: {e}")
+                import traceback
+                traceback.print_exc()
+                _set_progress(project_key, "failed", 100, str(e), status="failed")
+                raise HTTPException(status_code=500, detail=str(e))
 
-    if mode == "quick":
-        # Quick mode: AI-enriched sections + only 2 core diagrams (better quality, faster than full).
+        if mode == "quick":
+            # Quick mode: AI-enriched sections + only 2 core diagrams (better quality, faster than full).
+            sections = _build_sections_with_ai(inputs, project_name, project_key)
+            _set_progress(project_key, "diagrams", 55, "Rendering core diagrams...")
+            quick_stats = _render_quick_diagrams(inputs, image_paths)
+            if quick_stats["core_rendered"] == 0:
+                # Do not fail quick mode; generate document without freshly rendered diagrams.
+                _set_progress(
+                    project_key,
+                    "diagrams",
+                    60,
+                    "Core diagrams unavailable; continuing with document generation.",
+                    status="processing",
+                )
+            try:
+                _set_progress(project_key, "doc", 80, "Compiling quick DOCX...")
+                generated_path = _generate_document(project_name, project_key, inputs, sections, image_paths, "quick")
+                _set_progress(
+                    project_key,
+                    "completed",
+                    100,
+                    "Quick document ready.",
+                    status="completed",
+                    download_url=f"/download_srs/{Path(generated_path).name}",
+                    mode="quick",
+                )
+                background_tasks.add_task(_generate_enhanced_background, inputs, project_name, project_key)
+                return {
+                    "status": "success",
+                    "mode": "quick",
+                    "message": "Quick SRS generated. Enhanced version is being prepared in background.",
+                    "srs_document_path": generated_path,
+                    "download_url": f"/download_srs/{Path(generated_path).name}",
+                    "enhanced_status_url": f"/srs_status/{project_key}",
+                    "enhanced_download_url": f"/download_srs/{Path(_output_path(project_key, 'enhanced')).name}",
+                    "warnings": [] if quick_stats["core_rendered"] > 0 else [
+                        "Core diagrams could not be freshly rendered in quick mode; document was generated with available assets."
+                    ],
+                }
+            except Exception as e:
+                print(f"❌ Quick Document Generation Failed: {e}")
+                import traceback
+                traceback.print_exc()
+                try:
+                    _set_progress(project_key, "doc", 82, "Quick build failed, switching to instant fallback...")
+                    generated_path = _generate_instant_fallback(project_name, project_key, inputs, image_paths)
+                    _set_progress(
+                        project_key,
+                        "completed",
+                        100,
+                        "Instant fallback document ready.",
+                        status="completed",
+                        download_url=f"/download_srs/{Path(generated_path).name}",
+                        mode="instant",
+                    )
+                    background_tasks.add_task(_generate_enhanced_background, inputs, project_name, project_key)
+                    return {
+                        "status": "success",
+                        "mode": "instant",
+                        "message": "Quick generation failed, instant fallback generated successfully.",
+                        "srs_document_path": generated_path,
+                        "download_url": f"/download_srs/{Path(generated_path).name}",
+                        "enhanced_status_url": f"/srs_status/{project_key}",
+                        "enhanced_download_url": f"/download_srs/{Path(_output_path(project_key, 'enhanced')).name}",
+                        "warnings": [f"Quick generation failed: {e}. Returned instant fallback."],
+                    }
+                except Exception as fallback_err:
+                    _set_progress(project_key, "failed", 100, str(fallback_err), status="failed")
+                    raise HTTPException(status_code=500, detail=f"Quick and instant fallback failed: {fallback_err}")
+
         sections = _build_sections_with_ai(inputs, project_name, project_key)
-        _set_progress(project_key, "diagrams", 55, "Rendering core diagrams...")
-        quick_stats = _render_quick_diagrams(inputs, image_paths)
-        if quick_stats["core_rendered"] == 0:
-            # Do not fail quick mode; generate document without freshly rendered diagrams.
+        _set_progress(project_key, "diagrams", 60, "Rendering all diagrams...")
+        diagram_stats = _render_all_diagrams(inputs, image_paths, sections["external_interfaces_section"])
+        if diagram_stats["core_rendered"] == 0:
             _set_progress(
                 project_key,
                 "diagrams",
-                60,
-                "Core diagrams unavailable; continuing with document generation.",
+                70,
+                "Diagrams unavailable; continuing with document generation.",
                 status="processing",
             )
+
+        # 3. Document Construction Phase
         try:
-            _set_progress(project_key, "doc", 80, "Compiling quick DOCX...")
-            generated_path = _generate_document(project_name, project_key, inputs, sections, image_paths, "quick")
+            _set_progress(project_key, "doc", 85, "Building full DOCX...")
+            generated_path = _generate_document(project_name, project_key, inputs, sections, image_paths, "full")
             _set_progress(
                 project_key,
                 "completed",
                 100,
-                "Quick document ready.",
+                "Full document ready.",
                 status="completed",
                 download_url=f"/download_srs/{Path(generated_path).name}",
-                mode="quick",
+                mode="full",
             )
-            background_tasks.add_task(_generate_enhanced_background, inputs, project_name, project_key)
+            
             return {
                 "status": "success",
-                "mode": "quick",
-                "message": "Quick SRS generated. Enhanced version is being prepared in background.",
+                "message": "SRS document generated successfully",
+                "mode": "full",
                 "srs_document_path": generated_path,
                 "download_url": f"/download_srs/{Path(generated_path).name}",
-                "enhanced_status_url": f"/srs_status/{project_key}",
-                "enhanced_download_url": f"/download_srs/{Path(_output_path(project_key, 'enhanced')).name}",
-                "warnings": [] if quick_stats["core_rendered"] > 0 else [
-                    "Core diagrams could not be freshly rendered in quick mode; document was generated with available assets."
+                "warnings": [] if diagram_stats["core_rendered"] > 0 else [
+                    "Some diagrams could not be rendered; document was generated with available assets."
                 ],
             }
+
         except Exception as e:
-            print(f"❌ Quick Document Generation Failed: {e}")
+            print(f"❌ Document Generation Failed: {e}")
             import traceback
             traceback.print_exc()
             try:
-                _set_progress(project_key, "doc", 82, "Quick build failed, switching to instant fallback...")
+                _set_progress(project_key, "doc", 88, "Full build failed, switching to instant fallback...")
                 generated_path = _generate_instant_fallback(project_name, project_key, inputs, image_paths)
                 _set_progress(
                     project_key,
@@ -743,61 +812,21 @@ async def generate_srs(
                 background_tasks.add_task(_generate_enhanced_background, inputs, project_name, project_key)
                 return {
                     "status": "success",
+                    "message": "Full generation failed, instant fallback generated successfully.",
                     "mode": "instant",
-                    "message": "Quick generation failed, instant fallback generated successfully.",
                     "srs_document_path": generated_path,
                     "download_url": f"/download_srs/{Path(generated_path).name}",
-                    "enhanced_status_url": f"/srs_status/{project_key}",
-                    "enhanced_download_url": f"/download_srs/{Path(_output_path(project_key, 'enhanced')).name}",
-                    "warnings": [f"Quick generation failed: {e}. Returned instant fallback."],
+                    "warnings": [f"Full generation failed: {e}. Returned instant fallback."],
                 }
             except Exception as fallback_err:
                 _set_progress(project_key, "failed", 100, str(fallback_err), status="failed")
-                raise HTTPException(status_code=500, detail=f"Quick and instant fallback failed: {fallback_err}")
-
-    sections = _build_sections_with_ai(inputs, project_name, project_key)
-    _set_progress(project_key, "diagrams", 60, "Rendering all diagrams...")
-    diagram_stats = _render_all_diagrams(inputs, image_paths, sections["external_interfaces_section"])
-    if diagram_stats["core_rendered"] == 0:
-        _set_progress(
-            project_key,
-            "diagrams",
-            70,
-            "Diagrams unavailable; continuing with document generation.",
-            status="processing",
-        )
-
-    # 3. Document Construction Phase
-    try:
-        _set_progress(project_key, "doc", 85, "Building full DOCX...")
-        generated_path = _generate_document(project_name, project_key, inputs, sections, image_paths, "full")
-        _set_progress(
-            project_key,
-            "completed",
-            100,
-            "Full document ready.",
-            status="completed",
-            download_url=f"/download_srs/{Path(generated_path).name}",
-            mode="full",
-        )
-        
-        return {
-            "status": "success",
-            "message": "SRS document generated successfully",
-            "mode": "full",
-            "srs_document_path": generated_path,
-            "download_url": f"/download_srs/{Path(generated_path).name}",
-            "warnings": [] if diagram_stats["core_rendered"] > 0 else [
-                "Some diagrams could not be rendered; document was generated with available assets."
-            ],
-        }
-
+                raise HTTPException(status_code=500, detail=f"Full and instant fallback failed: {fallback_err}")
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"❌ Document Generation Failed: {e}")
-        import traceback
-        traceback.print_exc()
+        # Last-resort safety: attempt instant fallback for any unexpected failure.
         try:
-            _set_progress(project_key, "doc", 88, "Full build failed, switching to instant fallback...")
+            _set_progress(project_key, "doc", 75, "Unexpected error, switching to instant fallback...")
             generated_path = _generate_instant_fallback(project_name, project_key, inputs, image_paths)
             _set_progress(
                 project_key,
@@ -811,15 +840,15 @@ async def generate_srs(
             background_tasks.add_task(_generate_enhanced_background, inputs, project_name, project_key)
             return {
                 "status": "success",
-                "message": "Full generation failed, instant fallback generated successfully.",
+                "message": "Unexpected error; instant fallback generated successfully.",
                 "mode": "instant",
                 "srs_document_path": generated_path,
                 "download_url": f"/download_srs/{Path(generated_path).name}",
-                "warnings": [f"Full generation failed: {e}. Returned instant fallback."],
+                "warnings": [f"Unexpected error: {e}. Returned instant fallback."],
             }
         except Exception as fallback_err:
             _set_progress(project_key, "failed", 100, str(fallback_err), status="failed")
-            raise HTTPException(status_code=500, detail=f"Full and instant fallback failed: {fallback_err}")
+            raise HTTPException(status_code=500, detail=f"Unexpected error; instant fallback failed: {fallback_err}")
 
 
 

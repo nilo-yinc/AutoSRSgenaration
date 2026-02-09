@@ -152,16 +152,20 @@ class SRSDocumentGenerator:
 
     def _add_figure(self, path: Path, caption: str, width: float = 5.8):
         """Insert a centered figure with a consistent caption style."""
-        self.doc.add_picture(str(path), width=Inches(width))
-        image_para = self.doc.paragraphs[-1]
-        image_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        try:
+            self.doc.add_picture(str(path), width=Inches(width))
+            image_para = self.doc.paragraphs[-1]
+            image_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        caption_para = self.doc.add_paragraph()
-        caption_para.style = 'Caption'
-        run = caption_para.add_run(caption)
-        run.font.name = 'Arial'
-        run.font.size = Pt(10)
-        run.italic = True
+            caption_para = self.doc.add_paragraph()
+            caption_para.style = 'Caption'
+            run = caption_para.add_run(caption)
+            run.font.name = 'Arial'
+            run.font.size = Pt(10)
+            run.italic = True
+        except Exception as e:
+            print(f"⚠️ Could not add figure {path}: {e}")
+            self.doc.add_paragraph(f"[Image: {caption} could not be generated]", style="Caption")
         
     def _add_visual_grid(self, items, columns: int = 2, image_width: float = 2.8):
         """Insert a compact grid of figures with captions."""
@@ -181,10 +185,14 @@ class SRSDocumentGenerator:
                 para = cell.paragraphs[0] if cell.paragraphs else cell.add_paragraph()
                 para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 if path and Path(path).exists():
-                    run = para.add_run()
-                    run.add_picture(str(path), width=Inches(image_width))
-                    cap = cell.add_paragraph(caption)
-                    cap.style = "Caption"
+                    try:
+                        run = para.add_run()
+                        run.add_picture(str(path), width=Inches(image_width))
+                        cap = cell.add_paragraph(caption)
+                        cap.style = "Caption"
+                    except Exception as e:
+                        print(f"⚠️ Could not add grid figure {path}: {e}")
+                        cell.add_paragraph(f"[Image missing: {caption}]", style="Caption")
                 else:
                     placeholder = cell.add_paragraph(caption)
                     placeholder.style = "Caption"
