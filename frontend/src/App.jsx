@@ -8,7 +8,7 @@ import EnterpriseAccess from './pages/EnterpriseAccess';
 import StudentAccess from './pages/StudentAccess';
 import EnterpriseForm from './pages/EnterpriseForm';
 import EnterpriseGeneration from './pages/EnterpriseGeneration';
-import LandingPage from './pages/Landing';
+import LandingPage from './pages/LandingPage';
 
 const PrivateRoute = ({ children }) => {
   const { token, loading } = useAuth();
@@ -26,11 +26,11 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/demo/:id" element={<Demo />} />
-            
+
             {/* Authentication Pages */}
             <Route path="/enterprise/access" element={<EnterpriseAccess />} />
             <Route path="/student/access" element={<StudentAccess />} />
-            
+
             {/* Protected Routes - Require Authentication */}
             <Route path="/enterprise/form" element={
               <PrivateRoute>

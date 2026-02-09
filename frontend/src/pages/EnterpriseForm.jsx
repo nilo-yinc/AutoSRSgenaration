@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // import { buildEnterpriseDocx } from '../utils/buildEnterpriseDocx'; // Will create next
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +47,32 @@ const EnterpriseForm = () => {
         // 7. Output
         detailLevel: 'Professional'
     });
+
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    // Load from Local Storage on Mount
+    useEffect(() => {
+        const savedData = localStorage.getItem('autoSRS_enterpriseForm');
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                // Merge carefully, maybe deep merge if needed, but shallow merge is usually fine for flat structure
+                setFormData(prev => ({ ...prev, ...parsed.formData }));
+                if (parsed.step) setStep(parsed.step);
+            } catch (e) {
+                console.error("Failed to load saved form", e);
+            }
+        }
+        setIsLoaded(true); // Mark as loaded so we can start saving
+    }, []);
+
+    // Save to Local Storage on Change
+    useEffect(() => {
+        if (isLoaded) {
+            const payload = { formData, step };
+            localStorage.setItem('autoSRS_enterpriseForm', JSON.stringify(payload));
+        }
+    }, [formData, step, isLoaded]);
 
     const updateField = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -141,172 +167,172 @@ const EnterpriseForm = () => {
 
             {/* Main Content with Sidebar */}
             <div className="flex flex-1">
-            {/* Left Sidebar Steps */}
-            <div className="w-64 bg-gray-900 border-r border-gray-800 p-6 overflow-y-auto">
-                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple mb-8">
-                    SRS Generator
-                </h1>
-                <div className="space-y-2">
-                    {['Project Identity', 'System Context', 'Functional Scope', 'Non-Functional', 'Security & Compliance', 'Technical Prefs', 'Output Control'].map((s, i) => (
-                        <div
-                            key={i}
-                            onClick={() => setStep(i + 1)}
-                            className={`p-3 rounded cursor-pointer transition-all ${step === i + 1
-                                ? 'bg-neon-blue/20 text-neon-blue border-l-4 border-neon-blue'
-                                : 'text-gray-500 hover:text-gray-300'
-                                }`}
-                        >
-                            {s}
-                        </div>
-                    ))}
+                {/* Left Sidebar Steps */}
+                <div className="w-64 bg-gray-900 border-r border-gray-800 p-6 overflow-y-auto">
+                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple mb-8">
+                        SRS Generator
+                    </h1>
+                    <div className="space-y-2">
+                        {['Project Identity', 'System Context', 'Functional Scope', 'Non-Functional', 'Security & Compliance', 'Technical Prefs', 'Output Control'].map((s, i) => (
+                            <div
+                                key={i}
+                                onClick={() => setStep(i + 1)}
+                                className={`p-3 rounded cursor-pointer transition-all ${step === i + 1
+                                    ? 'bg-neon-blue/20 text-neon-blue border-l-4 border-neon-blue'
+                                    : 'text-gray-500 hover:text-gray-300'
+                                    }`}
+                            >
+                                {s}
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            </div>
 
-            {/* Main Content */}
-            <div className="flex-1 p-10 max-w-4xl overflow-y-auto">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={step}
-                        variants={sectionVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        transition={{ duration: 0.3 }}
-                    >
-                        {step === 1 && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">I. Project Identity</h2>
-                                {renderInput('Project Name', 'projectName', 'e.g. Customer Churn Prediction System')}
-                                {renderInput('Author(s)', 'authors', 'Enter names (one per line)', 'textarea')}
-                                {renderInput('Organization', 'organization', 'e.g. TechCorp Solutions')}
-                                {renderInput('Problem Statement', 'problemStatement', 'Describe the core problem...', 'textarea')}
+                {/* Main Content */}
+                <div className="flex-1 p-10 max-w-4xl overflow-y-auto">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={step}
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            transition={{ duration: 0.3 }}
+                        >
+                            {step === 1 && (
+                                <div>
+                                    <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">I. Project Identity</h2>
+                                    {renderInput('Project Name', 'projectName', 'e.g. Customer Churn Prediction System')}
+                                    {renderInput('Author(s)', 'authors', 'Enter names (one per line)', 'textarea')}
+                                    {renderInput('Organization', 'organization', 'e.g. TechCorp Solutions')}
+                                    {renderInput('Problem Statement', 'problemStatement', 'Describe the core problem...', 'textarea')}
 
-                                <div className="mb-6">
-                                    <label className="block text-neon-blue text-sm font-bold mb-2 uppercase">Target Users <span className="text-red-500">*</span></label>
-                                    <div className="flex flex-wrap gap-4">
-                                        {['Admin', 'End User', 'Manager', 'Analyst', 'Customer'].map(u => (
-                                            <label key={u} className="flex items-center space-x-2 bg-dark-input px-4 py-2 rounded cursor-pointer border border-gray-700 hover:border-neon-purple transition">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.targetUsers.includes(u)}
-                                                    onChange={() => toggleCheckbox('targetUsers', u)}
-                                                    className="form-checkbox text-neon-purple bg-gray-800 border-gray-600 rounded focus:ring-0"
-                                                />
-                                                <span>{u}</span>
-                                            </label>
-                                        ))}
+                                    <div className="mb-6">
+                                        <label className="block text-neon-blue text-sm font-bold mb-2 uppercase">Target Users <span className="text-red-500">*</span></label>
+                                        <div className="flex flex-wrap gap-4">
+                                            {['Admin', 'End User', 'Manager', 'Analyst', 'Customer'].map(u => (
+                                                <label key={u} className="flex items-center space-x-2 bg-dark-input px-4 py-2 rounded cursor-pointer border border-gray-700 hover:border-neon-purple transition">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.targetUsers.includes(u)}
+                                                        onChange={() => toggleCheckbox('targetUsers', u)}
+                                                        className="form-checkbox text-neon-purple bg-gray-800 border-gray-600 rounded focus:ring-0"
+                                                    />
+                                                    <span>{u}</span>
+                                                </label>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {step === 2 && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">II. System Context</h2>
-                                {renderSelect('Application Type', 'appType', ['Web Application', 'Mobile App', 'Desktop Software', 'API Service', 'Embedded System'])}
-                                {renderSelect('Domain/Industry', 'domain', ['FinTech', 'Healthcare', 'E-commerce', 'Education', 'Social Media', 'Enterprise Resource Planning'])}
-                            </div>
-                        )}
+                            {step === 2 && (
+                                <div>
+                                    <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">II. System Context</h2>
+                                    {renderSelect('Application Type', 'appType', ['Web Application', 'Mobile App', 'Desktop Software', 'API Service', 'Embedded System'])}
+                                    {renderSelect('Domain/Industry', 'domain', ['FinTech', 'Healthcare', 'E-commerce', 'Education', 'Social Media', 'Enterprise Resource Planning'])}
+                                </div>
+                            )}
 
-                        {step === 3 && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">III. Functional Scope</h2>
-                                {renderInput('Core Features', 'coreFeatures', 'List features (one per line)...', 'textarea')}
-                                {renderInput('Primary User Flow', 'userFlow', 'e.g. User logs in -> Uploads Data -> Views Results...', 'textarea')}
-                            </div>
-                        )}
+                            {step === 3 && (
+                                <div>
+                                    <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">III. Functional Scope</h2>
+                                    {renderInput('Core Features', 'coreFeatures', 'List features (one per line)...', 'textarea')}
+                                    {renderInput('Primary User Flow', 'userFlow', 'e.g. User logs in -> Uploads Data -> Views Results...', 'textarea')}
+                                </div>
+                            )}
 
-                        {step === 4 && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">IV. Non-Functional Requirements</h2>
-                                {renderSelect('Expected User Scale', 'userScale', ['< 100 Users', '100 - 1,000 Users', '1,000 - 10,000 Users', '10,000+ Users'])}
-                                {renderSelect('Performance Expectation', 'performance', ['Standard (2-3s load)', 'High Performance (< 1s load)', 'Real-time (ms latency)'])}
-                            </div>
-                        )}
+                            {step === 4 && (
+                                <div>
+                                    <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">IV. Non-Functional Requirements</h2>
+                                    {renderSelect('Expected User Scale', 'userScale', ['< 100 Users', '100 - 1,000 Users', '1,000 - 10,000 Users', '10,000+ Users'])}
+                                    {renderSelect('Performance Expectation', 'performance', ['Standard (2-3s load)', 'High Performance (< 1s load)', 'Real-time (ms latency)'])}
+                                </div>
+                            )}
 
-                        {step === 5 && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">V. Security & Compliance</h2>
-                                <div className="mb-6">
-                                    <label className="block text-neon-blue text-sm font-bold mb-2 uppercase">Authentication Required?</label>
-                                    <div className="flex gap-4">
-                                        {['Yes', 'No'].map(opt => (
-                                            <label key={opt} className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="authRequired"
-                                                    checked={formData.authRequired === opt}
-                                                    onChange={() => updateField('authRequired', opt)}
-                                                    className="text-neon-purple focus:ring-0"
-                                                />
-                                                <span>{opt}</span>
-                                            </label>
-                                        ))}
+                            {step === 5 && (
+                                <div>
+                                    <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">V. Security & Compliance</h2>
+                                    <div className="mb-6">
+                                        <label className="block text-neon-blue text-sm font-bold mb-2 uppercase">Authentication Required?</label>
+                                        <div className="flex gap-4">
+                                            {['Yes', 'No'].map(opt => (
+                                                <label key={opt} className="flex items-center space-x-2 cursor-pointer">
+                                                    <input
+                                                        type="radio"
+                                                        name="authRequired"
+                                                        checked={formData.authRequired === opt}
+                                                        onChange={() => updateField('authRequired', opt)}
+                                                        className="text-neon-purple focus:ring-0"
+                                                    />
+                                                    <span>{opt}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="mb-6">
+                                        <label className="block text-neon-blue text-sm font-bold mb-2 uppercase">Compliance Requirements</label>
+                                        <div className="flex flex-wrap gap-4">
+                                            {['GDPR', 'HIPAA', 'PCI-DSS', 'SOC2'].map(c => (
+                                                <label key={c} className="flex items-center space-x-2 bg-dark-input px-4 py-2 rounded cursor-pointer border border-gray-700 hover:border-neon-purple transition">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.compliance.includes(c)}
+                                                        onChange={() => toggleCheckbox('compliance', c)}
+                                                        className="form-checkbox text-neon-purple rounded"
+                                                    />
+                                                    <span>{c}</span>
+                                                </label>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="mb-6">
-                                    <label className="block text-neon-blue text-sm font-bold mb-2 uppercase">Compliance Requirements</label>
-                                    <div className="flex flex-wrap gap-4">
-                                        {['GDPR', 'HIPAA', 'PCI-DSS', 'SOC2'].map(c => (
-                                            <label key={c} className="flex items-center space-x-2 bg-dark-input px-4 py-2 rounded cursor-pointer border border-gray-700 hover:border-neon-purple transition">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.compliance.includes(c)}
-                                                    onChange={() => toggleCheckbox('compliance', c)}
-                                                    className="form-checkbox text-neon-purple rounded"
-                                                />
-                                                <span>{c}</span>
-                                            </label>
-                                        ))}
+                            )}
+
+                            {step === 6 && (
+                                <div>
+                                    <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">VI. Technical Preferences</h2>
+                                    {renderSelect('Preferred Backend', 'backendPref', ['Node.js', 'Python (Django/FastAPI)', 'Java (Spring)', 'Go', 'No Preference'])}
+                                    {renderSelect('Database Preference', 'dbPref', ['PostgreSQL', 'MongoDB', 'MySQL', 'Firebase', 'No Preference'])}
+                                    {renderSelect('Deployment Preference', 'deploymentPref', ['AWS', 'Google Cloud', 'Azure', 'Vercel/Netlify', 'On-Premise'])}
+                                </div>
+                            )}
+
+                            {step === 7 && (
+                                <div>
+                                    <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">VII. Output Control</h2>
+                                    {renderSelect('SRS Detail Level', 'detailLevel', ['Standard (Academic)', 'Professional (Enterprise)', 'Brief (Startup MVP)'])}
+
+                                    <div className="mt-10 border-t border-gray-800 pt-6">
+                                        <button
+                                            onClick={handleGenerate}
+                                            className="w-full bg-neon-purple hover:bg-purple-700 text-white font-bold py-4 rounded shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all transform hover:scale-[1.01]"
+                                        >
+                                            GENERATE ENTERPRISE SRS
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
 
-                        {step === 6 && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">VI. Technical Preferences</h2>
-                                {renderSelect('Preferred Backend', 'backendPref', ['Node.js', 'Python (Django/FastAPI)', 'Java (Spring)', 'Go', 'No Preference'])}
-                                {renderSelect('Database Preference', 'dbPref', ['PostgreSQL', 'MongoDB', 'MySQL', 'Firebase', 'No Preference'])}
-                                {renderSelect('Deployment Preference', 'deploymentPref', ['AWS', 'Google Cloud', 'Azure', 'Vercel/Netlify', 'On-Premise'])}
-                            </div>
-                        )}
-
-                        {step === 7 && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-6 border-l-4 border-neon-purple pl-4">VII. Output Control</h2>
-                                {renderSelect('SRS Detail Level', 'detailLevel', ['Standard (Academic)', 'Professional (Enterprise)', 'Brief (Startup MVP)'])}
-
-                                <div className="mt-10 border-t border-gray-800 pt-6">
-                                    <button
-                                        onClick={handleGenerate}
-                                        className="w-full bg-neon-purple hover:bg-purple-700 text-white font-bold py-4 rounded shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all transform hover:scale-[1.01]"
-                                    >
-                                        GENERATE ENTERPRISE SRS
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </motion.div>
-                </AnimatePresence>
-
-                <div className="mt-8 flex justify-between">
-                    <button
-                        onClick={() => setStep(Math.max(1, step - 1))}
-                        className={`px-6 py-2 rounded border border-gray-600 hover:bg-gray-800 text-gray-300 ${step === 1 ? 'opacity-0 cursor-default' : ''}`}
-                    >
-                        Previous
-                    </button>
-                    {step < 7 && (
+                    <div className="mt-8 flex justify-between">
                         <button
-                            onClick={() => setStep(Math.min(7, step + 1))}
-                            className="px-6 py-2 rounded bg-neon-blue text-black font-bold hover:bg-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.4)]"
+                            onClick={() => setStep(Math.max(1, step - 1))}
+                            className={`px-6 py-2 rounded border border-gray-600 hover:bg-gray-800 text-gray-300 ${step === 1 ? 'opacity-0 cursor-default' : ''}`}
                         >
-                            Next Step
+                            Previous
                         </button>
-                    )}
+                        {step < 7 && (
+                            <button
+                                onClick={() => setStep(Math.min(7, step + 1))}
+                                className="px-6 py-2 rounded bg-neon-blue text-black font-bold hover:bg-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.4)]"
+                            >
+                                Next Step
+                            </button>
+                        )}
+                    </div>
                 </div>
-            </div>
             </div>
 
             {/* Profile Modal */}

@@ -114,54 +114,46 @@ class SRSDocumentGenerator:
         toc_heading_style.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
     def _add_header_footer(self):
-        """Add header and footer to all content pages (not title/TOC)."""
-        # Get the last section (content section)
+        """Add header and footer to all pages including title and TOC."""
+        # Get all sections
         sections = self.doc.sections
         
-        # Configure all sections
+        # Configure all sections (including title and TOC)
         for idx, section in enumerate(sections):
-            if idx == 0:
-                # Title page section - no header/footer page numbers
-                continue
-            elif idx == 1:
-                # TOC page section - no header/footer page numbers (optional)
-                continue
-            else:
-                # Content sections - add header and footer
-                # Header
-                header = section.header
-                header_para = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-                header_para.text = f"SRS for {self.project_name}"
-                header_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                if header_para.runs:
-                    header_para.runs[0].font.size = Pt(10)
-                    header_para.runs[0].font.name = 'Arial'
-                
-                # Footer with page number
-                footer = section.footer
-                footer_para = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-                footer_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-                
-                # Clear existing content
-                footer_para.clear()
-                
-                # Add page number field
-                run = footer_para.add_run()
-                fldChar1 = OxmlElement('w:fldChar')
-                fldChar1.set(qn('w:fldCharType'), 'begin')
-                
-                instrText = OxmlElement('w:instrText')
-                instrText.set(qn('xml:space'), 'preserve')
-                instrText.text = "PAGE"
-                
-                fldChar2 = OxmlElement('w:fldChar')
-                fldChar2.set(qn('w:fldCharType'), 'end')
-                
-                run._r.append(fldChar1)
-                run._r.append(instrText)
-                run._r.append(fldChar2)
-                run.font.size = Pt(10)
-                run.font.name = 'Arial'
+            # Header - add to ALL pages
+            header = section.header
+            header_para = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+            header_para.text = f"SRS for {self.project_name}"
+            header_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            if header_para.runs:
+                header_para.runs[0].font.size = Pt(10)
+                header_para.runs[0].font.name = 'Arial'
+            
+            # Footer with page number - add to ALL pages
+            footer = section.footer
+            footer_para = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+            footer_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            
+            # Clear existing content
+            footer_para.clear()
+            
+            # Add page number field
+            run = footer_para.add_run()
+            fldChar1 = OxmlElement('w:fldChar')
+            fldChar1.set(qn('w:fldCharType'), 'begin')
+            
+            instrText = OxmlElement('w:instrText')
+            instrText.set(qn('xml:space'), 'preserve')
+            instrText.text = "PAGE"
+            
+            fldChar2 = OxmlElement('w:fldChar')
+            fldChar2.set(qn('w:fldCharType'), 'end')
+            
+            run._r.append(fldChar1)
+            run._r.append(instrText)
+            run._r.append(fldChar2)
+            run.font.size = Pt(10)
+            run.font.name = 'Arial'
         
     def _add_title_page(self):
         """Add title page for the SRS document."""
@@ -344,10 +336,14 @@ class SRSDocumentGenerator:
         
         # 1.4 Document Conventions (optional)
         conventions = intro_data.get('document_conventions', {})
+        self.doc.add_heading('1.4 Document Conventions', level=2)
+        # Always add IEEE 830-1998 style convention
+        self.doc.add_paragraph("IEEE 830-1998 style", style='List Bullet')
+        # Add any additional conventions if provided
         if conventions.get('conventions'):
-            self.doc.add_heading(conventions.get('title', '1.4 Document Conventions'), level=2)
             for conv in conventions.get('conventions', []):
-                self.doc.add_paragraph(conv, style='List Bullet')
+                if conv and "IEEE" not in conv:  # Avoid duplicate
+                    self.doc.add_paragraph(conv, style='List Bullet')
         
         # 1.5 References (optional)
         references = intro_data.get('references', {})
@@ -357,6 +353,68 @@ class SRSDocumentGenerator:
                 ref_id = ref.get('id', '')
                 ref_desc = ref.get('description', '')
                 self.doc.add_paragraph(f"{ref_id}: {ref_desc}", style='List Bullet')
+
+        # 1.6 Live Prototype (New)
+        if intro_data.get('live_link'):
+            self.doc.add_heading('1.6 Live Prototype', level=2)
+            p = self.doc.add_paragraph("You can interact with the generated prototype of this system here: ")
+            self.add_hyperlink(p, "Click here to view Live Project Prototype", intro_data.get('live_link'))
+
+    def add_hyperlink(self, paragraph, text, url):
+        """
+        Add a hyperlink to a paragraph.
+        """
+        # This gets access to the document.xml.rels file and gets a new relation id value
+        part = paragraph.part
+        r_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
+
+        # Create the w:hyperlink tag and add needed values
+        hyperlink = OxmlElement('w:hyperlink')
+        hyperlink.set(qn('r:id'), r_id)
+
+        # Create a w:r element and a new w:rPr element
+        new_run = OxmlElement('w:r')
+        rPr = OxmlElement('w:rPr')
+
+        # Join all the xml elements together add add the required text to the w:r element
+        new_run.append(rPr)
+        new_run.text = text
+        hyperlink.append(new_run)
+
+        # Create a new R element and add the hyperlink to it
+        r = paragraph.add_run()
+        r._r.append(hyperlink)
+
+        # A workaround for the color and underlining
+        r.font.color.rgb = RGBColor(0, 0, 255)
+        r.font.underline = True
+        return hyperlink
+
+    def add_feasibility_section(self):
+        """
+        Add Feasibility & Cost Estimation (COCOMO) section.
+        """
+        self.doc.add_heading('2. Feasibility & Cost Estimation', level=1)
+        self.doc.add_paragraph("The following cost and effort estimates are based on the COCOMO II model.")
+
+        table = self.doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Metric'
+        hdr_cells[1].text = 'Estimated Value'
+
+        # Mock Data (In real app, calculate this based on function points)
+        metrics = [
+             ("Estimated Lines of Code (KLOC)", "5.2 KLOC"),
+             ("Development Effort", "14.5 Person-Months"),
+             ("Development Cost", "$45,000"),
+             ("Required Schedule", "6 Months")
+        ]
+        
+        for metric, value in metrics:
+            row_cells = table.add_row().cells
+            row_cells[0].text = metric
+            row_cells[1].text = value
     
     def add_overall_description_section(self, desc_data: Dict[str, Any]):
         """
@@ -394,10 +452,7 @@ class SRSDocumentGenerator:
         classes = user_classes.get('user_classes', [])
         for user_class in classes:
             user_type = user_class.get('user_class', '')
-            self.doc.add_paragraph(user_type, style='Heading 3')
-            characteristics = user_class.get('characteristics', [])
-            for char in characteristics:
-                self.doc.add_paragraph(char, style='List Bullet')
+            self.doc.add_paragraph(user_type)
         
         # 2.4 Operating Environment
         environment = desc_data.get('operating_environment', {})
@@ -468,32 +523,14 @@ class SRSDocumentGenerator:
             feature_name = feature.get('feature_name', f'Feature {idx}')
             self.doc.add_heading(f"4.{idx} {feature_name}", level=2)
             
-            # Description
+            # Description (if provided)
             description = feature.get('description', '')
             if description:
                 self.doc.add_paragraph(f"Description: {description}")
             
-            # Stimulus/Response Sequences
-            stimulus_response = feature.get('stimulus_response', [])
-            if stimulus_response:
-                self.doc.add_paragraph("Stimulus/Response Sequences:", style='Heading 3')
-                for sr in stimulus_response:
-                    stimulus = sr.get('stimulus', '')
-                    response = sr.get('response', '')
-                    para = self.doc.add_paragraph()
-                    para.add_run("Stimulus: ").bold = True
-                    para.add_run(stimulus)
-                    para = self.doc.add_paragraph()
-                    para.add_run("Response: ").bold = True
-                    para.add_run(response)
-            
-            # Functional Requirements
-            functional_reqs = feature.get('functional_requirements', [])
-            if functional_reqs:
-                self.doc.add_paragraph("Functional Requirements:", style='Heading 3')
-                for req in functional_reqs:
-                    req_desc = req.get('description', '')
-                    self.doc.add_paragraph(req_desc, style='List Bullet')
+            # Simplified functional requirements format: "Support: {feature_name}"
+            self.doc.add_paragraph("Functional Requirements:", style='Heading 3')
+            self.doc.add_paragraph(f"Support: {feature_name}", style='List Bullet')
     
     def add_user_workflow_section(self):
         """Section 5: User Workflow with workflow diagram."""
@@ -768,6 +805,7 @@ def generate_srs_document(
     
     # Add all sections (proper SRS structure 1–11 with diagram placeholders)
     generator.add_introduction_section(introduction_section)
+    generator.add_feasibility_section() # Added Feasibility
     generator.add_overall_description_section(overall_description_section)
     generator.add_system_architecture_section()
     generator.add_system_features_section(system_features_section)

@@ -1,202 +1,58 @@
-import {
-    Document,
-    Packer,
-    Paragraph,
-    TextRun,
-    Table,
-    TableRow,
-    TableCell,
-    WidthType,
-    HeadingLevel,
-    TableOfContents,
-    AlignmentType,
-    PageBreak,
-    Header,
-    Footer,
-} from 'docx';
+import axios from 'axios';
 
+/**
+ * Builds the Enterprise SRS DOCX by calling the backend API.
+ * The backend handles AI generation and DOCX construction.
+ * 
+ * @param {Object} formData - The form data collected from the wizard.
+ * @returns {Promise<Blob>} - A Blob containing the generated DOCX file.
+ */
 export async function buildEnterpriseDocx(formData) {
-    const { 
-        projectName, 
-        authors, 
-        organization, 
-        problemStatement, 
-        targetUsers,
-        appType,
-        domain,
-        coreFeatures,
-        userFlow,
-        userScale,
-        performance,
-        authRequired,
-        sensitiveData,
-        compliance,
-        backendPref,
-        dbPref,
-        deploymentPref,
-        detailLevel
-    } = formData;
-
-    const children = [];
-
-    // ----- HEADER & FOOTER -----
-    const header = new Header({
-        children: [
-            new Paragraph({
-                children: [
-                    new TextRun({ text: organization || 'Confidential', bold: true, size: 20, color: '808080' }),
-                ],
-                alignment: AlignmentType.RIGHT,
-            }),
-        ],
-    });
-
-    // ----- COVER PAGE -----
-    children.push(
-        new Paragraph({ text: '', spacing: { before: 2400 } }),
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-                new TextRun({ text: 'SOFTWARE REQUIREMENTS SPECIFICATION', bold: true, size: 36, color: '2E74B5' }),
-            ],
-        }),
-        new Paragraph({ text: '', spacing: { before: 400 } }),
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-                new TextRun({ text: `For ${projectName || 'Untitled Project'}`, size: 28, italics: true }),
-            ],
-        }),
-        new Paragraph({ text: '', spacing: { before: 2000 } }),
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-                new TextRun({ text: 'Version: 1.0', size: 24 }),
-            ],
-        }),
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-                new TextRun({ text: `Date: ${new Date().toLocaleDateString()}`, size: 24 }),
-            ],
-        }),
-        new Paragraph({ text: '', spacing: { before: 800 } }),
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'Prepared By:', bold: true, size: 24 })],
-        }),
-        ...authors.split('\n').map(a => new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: a, size: 22 })],
-        })),
-        new Paragraph({ children: [new PageBreak()] })
-    );
-
-    // ----- TABLE OF CONTENTS -----
-    children.push(
-        new Paragraph({ text: 'Table of Contents', heading: HeadingLevel.HEADING_1 }),
-        new TableOfContents('Index', { hyperlink: true, headingStyleRange: '1-3' }),
-        new Paragraph({ children: [new PageBreak()] })
-    );
-
-    // ----- 1. INTRODUCTION -----
-    children.push(
-        new Paragraph({ text: '1. Introduction', heading: HeadingLevel.HEADING_1 }),
-        new Paragraph({ text: '1.1 Purpose', heading: HeadingLevel.HEADING_2 }),
-        new Paragraph({
-            children: [new TextRun({ 
-                text: `The purpose of this document is to define the requirements for "${projectName}". This SRS describes the scope, functional, and non-functional requirements for developers, stakeholders, and users.` 
-            })],
-        }),
-        new Paragraph({ text: '1.2 Problem Statement', heading: HeadingLevel.HEADING_2 }),
-        new Paragraph({ children: [new TextRun({ text: problemStatement || 'N/A' })] }),
-        new Paragraph({ text: '1.3 Intended Audience', heading: HeadingLevel.HEADING_2 }),
-        new Paragraph({ children: [new TextRun({ text: `Target Users: ${targetUsers.join(', ') || 'General Users'}` })] }),
-        new Paragraph({ children: [new PageBreak()] })
-    );
-
-    // ----- 2. OVERALL DESCRIPTION -----
-    children.push(
-        new Paragraph({ text: '2. Overall Description', heading: HeadingLevel.HEADING_1 }),
-        new Paragraph({ text: '2.1 Product Context', heading: HeadingLevel.HEADING_2 }),
-        new Paragraph({ children: [new TextRun({ text: `This is a ${appType} in the ${domain} domain.` })] }),
-        new Paragraph({ text: '2.2 User Flow', heading: HeadingLevel.HEADING_2 }),
-        new Paragraph({ children: [new TextRun({ text: userFlow || 'N/A' })] }),
-        new Paragraph({ children: [new PageBreak()] })
-    );
-
-    // ----- 3. SYSTEM FEATURES -----
-    children.push(
-        new Paragraph({ text: '3. System Features', heading: HeadingLevel.HEADING_1 }),
-    );
-    const features = coreFeatures.split('\n').filter(Boolean);
-    features.forEach((f, i) => {
-        children.push(
-            new Paragraph({ text: `3.${i+1} Feature: ${f.split(':')[0] || 'Feature'}`, heading: HeadingLevel.HEADING_2 }),
-            new Paragraph({ 
-                bullet: { level: 0 },
-                children: [new TextRun({ text: f })] 
-            })
+    try {
+        const token = localStorage.getItem('token');
+        
+        // Call the Node.js backend to initiate the generation process
+        // The backend will:
+        // 1. Create a Project record
+        // 2. Call the Python service to expand content and generate the DOCX
+        // 3. Return a download URL
+        // Note: Using the proxy path /api which redirects to Node backend (port 5000)
+        const response = await axios.post('/api/projects/enterprise/generate', 
+            { formData },
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
         );
-    });
-    if (features.length === 0) {
-        children.push(new Paragraph({ text: 'No specific features listed.' }));
+
+        if (response.data && response.data.srs_document_path) {
+            let downloadUrl = response.data.srs_document_path;
+            
+            // Handle development environment path adjustments
+            // If the path comes back as relative (from Python backend), we might need to target the Python port directly
+            // or rely on a proxy. 
+            // Previous working configuration suggested direct access or proxy handling.
+            // If the URL is relative like /download_srs/..., we try to fetch it.
+            // If we are in dev, and there is no proxy for /download_srs, we might need to hit Python (8000) directly.
+            
+            if (downloadUrl.startsWith('/') && !downloadUrl.startsWith('/api')) {
+                 // Attempt to fetch from Python backend directly in dev environment
+                 downloadUrl = `http://127.0.0.1:8000${downloadUrl}`;
+            }
+
+            const fileResponse = await axios.get(downloadUrl, {
+                responseType: 'blob'
+            });
+
+            return fileResponse.data;
+        } else {
+            throw new Error("Backend did not return a valid document path.");
+        }
+
+    } catch (error) {
+        console.error("Error generating Enterprise SRS:", error);
+        throw error;
     }
-    children.push(new Paragraph({ children: [new PageBreak()] }));
-
-    // ----- 4. NON-FUNCTIONAL REQUIREMENTS -----
-    children.push(
-        new Paragraph({ text: '4. Non-Functional Requirements', heading: HeadingLevel.HEADING_1 }),
-        new Paragraph({ text: '4.1 Performance', heading: HeadingLevel.HEADING_2 }),
-        new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: `Expected Scale: ${userScale}` })] }),
-        new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: `Performance Goal: ${performance}` })] }),
-        new Paragraph({ text: '4.2 Security', heading: HeadingLevel.HEADING_2 }),
-        new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: `Authentication: ${authRequired}` })] }),
-        new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: `Sensitive Data Handling: ${sensitiveData}` })] }),
-        new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: `Compliance: ${compliance.join(', ') || 'None'}` })] }),
-         new Paragraph({ children: [new PageBreak()] })
-    );
-
-    // ----- 5. TECHNICAL STACK -----
-    children.push(
-        new Paragraph({ text: '5. Technical Architecture', heading: HeadingLevel.HEADING_1 }),
-        new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-                new TableRow({
-                    children: [
-                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Component', bold: true })] })] }),
-                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Technology/Platform', bold: true })] })] }),
-                    ],
-                }),
-                new TableRow({
-                    children: [
-                        new TableCell({ children: [new Paragraph('Backend')] }),
-                        new TableCell({ children: [new Paragraph(backendPref || 'Not Specified')] }),
-                    ],
-                }),
-                new TableRow({
-                    children: [
-                        new TableCell({ children: [new Paragraph('Database')] }),
-                        new TableCell({ children: [new Paragraph(dbPref || 'Not Specified')] }),
-                    ],
-                }),
-                new TableRow({
-                    children: [
-                        new TableCell({ children: [new Paragraph('Deployment')] }),
-                        new TableCell({ children: [new Paragraph(deploymentPref || 'Not Specified')] }),
-                    ],
-                }),
-            ],
-        })
-    );
-
-    const doc = new Document({
-        sections: [{ 
-            headers: { default: header },
-            properties: {}, 
-            children 
-        }],
-    });
-    return Packer.toBlob(doc);
 }

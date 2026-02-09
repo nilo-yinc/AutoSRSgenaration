@@ -67,6 +67,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('autoSRS_enterpriseForm'); // Clear saved form data
         setToken(null);
         setUser(null);
         delete axios.defaults.headers.common['Authorization'];

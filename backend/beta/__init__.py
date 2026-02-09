@@ -10,6 +10,6 @@ __author__ = "Your Name"
 __license__ = "Proprietary"
 __description__ = "AI-powered SRS document generator"
 
-from srs_engine.main import app
+from .main import app
 
 __all__ = ["app"]

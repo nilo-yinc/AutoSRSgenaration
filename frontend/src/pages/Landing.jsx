@@ -129,16 +129,16 @@ const LandingPage = () => {
             </section>
 
             {/* Features Section */}
-            <section className="py-24 px-6 bg-black/80 relative z-20">
+            <section className="py-24 px-6 bg-gradient-to-b from-black via-gray-900/30 to-black relative z-20">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-20">
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">Why Choose <span className="text-neon-blue">DocuVerse</span>?</h2>
                         <div className="w-24 h-1 bg-gradient-to-r from-neon-blue to-neon-purple mx-auto rounded-full"></div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
                         {/* Feature 1 */}
-                        <div className="feature-card p-8 bg-gray-900/50 rounded-2xl border border-gray-800 hover:border-neon-blue/50 transition duration-300 group">
+                        <div className="feature-card p-8 bg-gradient-to-br from-gray-900/80 to-black/60 rounded-2xl border border-gray-800 hover:border-neon-blue/50 transition duration-300 group hover:shadow-[0_0_30px_rgba(0,243,255,0.2)]">
                             <div className="w-14 h-14 bg-gray-800 rounded-xl flex items-center justify-center mb-6 group-hover:bg-neon-blue/20 transition">
                                 <Sparkles className="text-neon-blue w-8 h-8" />
                             </div>
@@ -149,7 +149,7 @@ const LandingPage = () => {
                         </div>
 
                         {/* Feature 2 */}
-                        <div className="feature-card p-8 bg-gray-900/50 rounded-2xl border border-gray-800 hover:border-neon-purple/50 transition duration-300 group">
+                        <div className="feature-card p-8 bg-gradient-to-br from-gray-900/80 to-black/60 rounded-2xl border border-gray-800 hover:border-neon-purple/50 transition duration-300 group hover:shadow-[0_0_30px_rgba(188,19,254,0.2)]">
                             <div className="w-14 h-14 bg-gray-800 rounded-xl flex items-center justify-center mb-6 group-hover:bg-neon-purple/20 transition">
                                 <Shield className="text-neon-purple w-8 h-8" />
                             </div>
@@ -160,7 +160,7 @@ const LandingPage = () => {
                         </div>
 
                         {/* Feature 3 */}
-                        <div className="feature-card p-8 bg-gray-900/50 rounded-2xl border border-gray-800 hover:border-pink-500/50 transition duration-300 group">
+                        <div className="feature-card p-8 bg-gradient-to-br from-gray-900/80 to-black/60 rounded-2xl border border-gray-800 hover:border-pink-500/50 transition duration-300 group hover:shadow-[0_0_30px_rgba(236,72,153,0.2)]">
                             <div className="w-14 h-14 bg-gray-800 rounded-xl flex items-center justify-center mb-6 group-hover:bg-pink-500/20 transition">
                                 <FileText className="text-pink-500 w-8 h-8" />
                             </div>
@@ -169,6 +169,88 @@ const LandingPage = () => {
                                 Seamlessly export your generated reports and documentation to professionally formatted Microsoft Word (DOCX) files with one click.
                             </p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Key Benefits Section */}
+            <section className="py-24 px-6 bg-black relative z-20">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-neon-blue/10 rounded-full blur-[100px]"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-neon-purple/10 rounded-full blur-[100px]"></div>
+                
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Perfect for <span className="text-neon-blue">Students</span> & <span className="text-neon-purple">Enterprises</span></h2>
+                    
+                    <div className="grid md:grid-cols-2 gap-12">
+                        {/* Student Benefits */}
+                        <div className="p-10 rounded-2xl border border-neon-purple/30 bg-black/40 backdrop-blur-sm">
+                            <div className="inline-flex items-center gap-3 mb-6 px-4 py-2 rounded-full bg-neon-purple/10 border border-neon-purple/30">
+                                <GraduationCap className="text-neon-purple" size={20} />
+                                <span className="text-neon-purple font-bold">Student Lab</span>
+                            </div>
+                            <h3 className="text-2xl font-bold mb-4">Academic Excellence</h3>
+                            <ul className="space-y-3">
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-purple mt-1">→</span>
+                                    <span className="text-gray-300">Generate feasibility reports and costing analysis</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-purple mt-1">→</span>
+                                    <span className="text-gray-300">Create professional lab reports with diagrams & ERDs</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-purple mt-1">→</span>
+                                    <span className="text-gray-300">24/7 documentation support for your projects</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-purple mt-1">→</span>
+                                    <span className="text-gray-300">Learn industry-standard documentation practices</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* Enterprise Benefits */}
+                        <div className="p-10 rounded-2xl border border-neon-blue/30 bg-black/40 backdrop-blur-sm">
+                            <div className="inline-flex items-center gap-3 mb-6 px-4 py-2 rounded-full bg-neon-blue/10 border border-neon-blue/30">
+                                <Building2 className="text-neon-blue" size={20} />
+                                <span className="text-neon-blue font-bold">Enterprise SRS</span>
+                            </div>
+                            <h3 className="text-2xl font-bold mb-4">Professional Requirements</h3>
+                            <ul className="space-y-3">
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-blue mt-1">→</span>
+                                    <span className="text-gray-300">IEEE 830-1998 compliant SRS generation</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-blue mt-1">→</span>
+                                    <span className="text-gray-300">Enterprise-grade documentation for production</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-blue mt-1">→</span>
+                                    <span className="text-gray-300">Secure handling of sensitive project data</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-neon-blue mt-1">→</span>
+                                    <span className="text-gray-300">Streamlined workflow for development teams</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA Section */}
+            <section className="py-24 px-6 relative z-20">
+                <div className="max-w-4xl mx-auto text-center">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Transform Your Documentation?</h2>
+                    <p className="text-xl text-gray-400 mb-10">Choose your path and start generating professional SRS documents in minutes.</p>
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className="group px-8 py-4 bg-gradient-to-r from-neon-blue to-blue-600 text-white rounded-xl font-bold hover:shadow-[0_0_30px_rgba(0,243,255,0.4)] transition-all"
+                        >
+                            🚀 Get Started Now
+                        </button>
                     </div>
                 </div>
             </section>

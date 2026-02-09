@@ -51,6 +51,10 @@ const ProjectSchema = new mongoose.Schema({
     hasPrototype: {
         type: Boolean,
         default: false
+    },
+    enterpriseData: {
+        type: Object, // Stores the full SRSRequest JSON
+        required: false
     }
 }, { timestamps: true });
 

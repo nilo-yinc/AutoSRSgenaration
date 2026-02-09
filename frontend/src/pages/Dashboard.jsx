@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { Building2, GraduationCap, Zap, Sparkles } from 'lucide-react';
+import { Building2, GraduationCap, User, Zap, Sparkles } from 'lucide-react';
+import ProfileSettings from './ProfileSettings';
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const [showProfile, setShowProfile] = useState(false);
 
     return (
         <div className="h-screen bg-gray-900 text-white font-sans selection:bg-neon-purple selection:text-white flex flex-col overflow-hidden">
@@ -19,8 +24,19 @@ const Dashboard = () => {
 
                 <div className="flex items-center gap-6">
                     <div className="text-right hidden sm:block">
-                        <div className="text-sm font-bold text-white tracking-wide">Choose Your Path</div>
-                        <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Enterprise or Student</div>
+                        <div className="text-sm font-bold text-white tracking-wide">{user?.name || 'Guest User'}</div>
+                        <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">{user?.role === 'admin' ? 'Administrator' : 'Standard Account'}</div>
+                    </div>
+
+                    <div
+                        onClick={() => setShowProfile(true)}
+                        className="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-700 hover:border-neon-blue cursor-pointer flex items-center justify-center overflow-hidden transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+                    >
+                        {user?.profilePic ? (
+                            <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="text-gray-400" size={24} />
+                        )}
                     </div>
                 </div>
             </nav>
@@ -34,7 +50,14 @@ const Dashboard = () => {
                     initial={{ opacity: 0, x: -50 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6 }}
-                    onClick={() => navigate('/enterprise/access')}
+                    onClick={() => {
+                        const token = localStorage.getItem('token');
+                        if (token) {
+                            navigate('/enterprise/form');
+                        } else {
+                            navigate('/enterprise/access');
+                        }
+                    }}
                 >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neon-blue/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
@@ -88,6 +111,9 @@ const Dashboard = () => {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Profile Modal */}
+            {showProfile && <ProfileSettings onClose={() => setShowProfile(false)} />}
         </div>
     );
 };

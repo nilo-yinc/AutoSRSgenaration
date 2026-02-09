@@ -9,6 +9,8 @@ class ProjectIdentity(BaseModel):
     organization: str = Field(..., description="Organization or company name")
     problem_statement: str = Field(..., description="Problem this system is intended to solve")
     target_users: List[str] = Field(..., min_items=1, description="Primary users of the system")
+    live_link: Optional[str] = Field(None, description="URL to the live prototype")
+    project_id: Optional[str] = Field(None, description="Database ID of the project")
     
     @validator('project_name', 'problem_statement')
     def not_empty(cls, v):
