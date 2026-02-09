@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import { ArrowRight, FileText, Zap, Shield, Sparkles, GraduationCap, Building2 } from 'lucide-react';
+import { ArrowRight, FileText, Shield, Sparkles, GraduationCap, Building2 } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -62,7 +62,7 @@ const LandingPage = () => {
             <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-gray-800">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
                     <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple flex items-center gap-2">
-                        <Zap size={24} className="text-neon-blue" /> DocuVerse
+                        <FileText size={24} className="text-neon-blue" /> DocuVerse
                     </div>
                     <div className="flex gap-4">
                         <button onClick={() => navigate('/dashboard')} className="bg-transparent border border-neon-blue text-neon-blue px-6 py-2 rounded-full hover:bg-neon-blue/10 transition font-medium">

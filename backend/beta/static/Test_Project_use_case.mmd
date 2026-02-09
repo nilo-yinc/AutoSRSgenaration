@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph Actors
+        direction TB
+        A0["Admin"]
+    end
+    subgraph UseCases
+        UC0["Login"]
+        UC1["Logout"]
+    end
+    A0 --> UC0
+    A0 --> UC1

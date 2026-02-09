@@ -151,12 +151,20 @@ class SRSDocumentGenerator:
             pass
 
     def _add_figure(self, path: Path, caption: str, width: float = 5.8):
-        """Insert a centered figure with a consistent caption style."""
+        """Insert a centered figure with a consistent caption style and border."""
         try:
-            self.doc.add_picture(str(path), width=Inches(width))
-            image_para = self.doc.paragraphs[-1]
-            image_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Use a table to create a border around the image
+            table = self.doc.add_table(rows=1, cols=1)
+            table.style = 'Table Grid'
+            table.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+            cell = table.cell(0, 0)
+            paragraph = cell.paragraphs[0]
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = paragraph.add_run()
+            run.add_picture(str(path), width=Inches(width))
 
+            # Add caption below
             caption_para = self.doc.add_paragraph()
             caption_para.style = 'Caption'
             run = caption_para.add_run(caption)
@@ -173,6 +181,7 @@ class SRSDocumentGenerator:
             return
         rows = (len(items) + columns - 1) // columns
         table = self.doc.add_table(rows=rows, cols=columns)
+        table.style = 'Table Grid'
         table.autofit = True
         idx = 0
         for r in range(rows):
@@ -610,7 +619,9 @@ class SRSDocumentGenerator:
         classes = user_classes.get('user_classes', [])
         for user_class in classes:
             user_type = user_class.get('user_class', '')
-            self.doc.add_paragraph(user_type)
+            if isinstance(user_class, dict) and user_class.get('characteristics'):
+                    user_type += f": {user_class.get('characteristics')}"
+            self.doc.add_paragraph(user_type, style='List Bullet')
         
         # 2.4 Operating Environment
         environment = desc_data.get('operating_environment', {})
@@ -718,7 +729,48 @@ class SRSDocumentGenerator:
             (self.image_paths.get("data_erd"), "Figure A6: Data ERD"),
         ]
         self._add_visual_grid(items, columns=2, image_width=2.9)
-    
+
+    def add_system_modeling_section(self):
+        """Add System Modeling section with Sequence and State diagrams."""
+        self.doc.add_heading('System Modeling & Design', level=1)
+        
+        # Sequence Diagram
+        self.doc.add_heading('Core Sequence Diagram', level=2)
+        self.doc.add_paragraph(
+            "The following sequence diagram illustrates the typical interaction flow between the user, "
+            "frontend, backend API, and data layer for a primary system action."
+        )
+        path = self.image_paths.get('sequence_diagram')
+        if path and Path(path).exists():
+            self._add_figure(Path(path), "Figure: System Sequence Diagram", width=6.0)
+            
+        # State Diagram
+        self.doc.add_heading('Entity State Diagram', level=2)
+        self.doc.add_paragraph(
+            "The state diagram below depicts the lifecycle of key system entities (e.g., Orders, Tickets, or User Sessions) "
+            "as they transition through various statuses."
+        )
+        path = self.image_paths.get('state_diagram')
+        if path and Path(path).exists():
+            self._add_figure(Path(path), "Figure: Entity State Diagram", width=6.0)
+
+    def add_ui_prototyping_section(self):
+        """Add UI Prototyping section."""
+        self.doc.add_heading('User Interface Prototyping', level=1)
+        self.doc.add_paragraph(
+            "This section provides a visual reference for the intended user interface layout and key components."
+        )
+        
+        # Wireframe Diagram
+        self.doc.add_heading('High-Level Wireframe', level=2)
+        path = self.image_paths.get('ui_local_diagram')
+        if path and Path(path).exists():
+            self._add_figure(Path(path), "Figure: Main Dashboard Wireframe", width=6.0)
+        
+        self.doc.add_paragraph(
+            "The wireframe above represents the structural layout of the main application dashboard, "
+            "incorporating navigation, content areas, and key interaction zones."
+        )
     def add_external_interfaces_section(
         self, 
         interfaces_data: Dict[str, Any],
@@ -886,6 +938,106 @@ class SRSDocumentGenerator:
                 para.add_run("Impact: ").bold = True
                 para.add_run(impact)
     
+    def add_detailed_appendices(self, sections: dict):
+        """
+        Add High-Quality Appendices: User Tables, Use Cases, System Models, UI, Risks.
+        """
+        self.doc.add_section()
+        self.doc.add_heading('Appendices', level=1)
+        self.doc.add_paragraph("The following appendices provide detailed specifications, models, and analysis for the proposed system.")
+
+        # Appendix A: Detailed User Personas
+        self.doc.add_heading('Appendix A: Detailed User Personas', level=2)
+        user_classes = sections.get('overall_description_section', {}).get('user_classes_and_characteristics', {}).get('user_classes', [])
+        if user_classes:
+            table = self.doc.add_table(rows=1, cols=4)
+            table.style = 'Table Grid'
+            hdr = table.rows[0].cells
+            hdr[0].text = "User Class"
+            hdr[1].text = "Description"
+            hdr[2].text = "Responsibilities"
+            hdr[3].text = "Skills/Requirements"
+            for c in user_classes:
+                row = table.add_row().cells
+                row[0].text = str(c.get('user_class', ''))
+                row[1].text = str(c.get('characteristics', ''))
+                row[2].text = str(c.get('responsibilities', 'N/A'))
+                row[3].text = str(c.get('skills', 'N/A'))
+        
+        # Appendix B: Use Case Specifications
+        self.doc.add_heading('Appendix B: Use Case Specifications', level=2)
+        features = sections.get('system_features_section', {}).get('features', [])
+        for feature in features:
+            feature_name = feature.get('feature_name', 'Feature')
+            structured = feature.get('structured_requirements', {})
+            
+            self.doc.add_heading(feature_name, level=3)
+            
+            table = self.doc.add_table(rows=0, cols=2)
+            table.style = 'Table Grid'
+            table.autofit = True
+            
+            row = table.add_row().cells
+            row[0].text = "Description"
+            row[1].text = feature.get('description', '')
+
+            if structured:
+                if structured.get('inputs'):
+                    row = table.add_row().cells
+                    row[0].text = "Inputs"
+                    row[1].text = structured.get('inputs', '')
+                
+                row = table.add_row().cells
+                row[0].text = "Functional Specs"
+                reqs = feature.get('functional_requirements', [])
+                req_text = "\n".join(f"• {r.get('description', '')}" for r in reqs if r.get('description'))
+                row[1].text = req_text or structured.get('acceptance_criteria', '')
+
+                if structured.get('outputs'):
+                    row = table.add_row().cells
+                    row[0].text = "Outputs"
+                    row[1].text = structured.get('outputs', '')
+
+                if structured.get('acceptance_criteria'):
+                    row = table.add_row().cells
+                    row[0].text = "Acceptance Criteria"
+                    row[1].text = structured.get('acceptance_criteria', '')
+            else:
+                 row = table.add_row().cells
+                 row[0].text = "Requirements"
+                 reqs = feature.get('functional_requirements', [])
+                 row[1].text = "\n".join(f"• {r.get('description', '')}" for r in reqs)
+
+            self.doc.add_paragraph()
+
+        # Appendix C: System Models (Sequence & State)
+        self.doc.add_heading('Appendix C: System Models', level=2)
+        self.add_system_modeling_section() # Reuse existing logic, it adds headings we might want to adjust, but acceptable for now.
+
+        # Appendix D: UI Prototypes
+        self.doc.add_heading('Appendix D: UI Prototypes', level=2)
+        self.add_ui_prototyping_section()
+
+        # Appendix E: Risk Analysis
+        self.doc.add_heading('Appendix E: Risk Analysis', level=2)
+        risks = sections.get('risk_analysis', [])
+        if risks:
+            table = self.doc.add_table(rows=1, cols=4)
+            table.style = 'Table Grid'
+            hdr = table.rows[0].cells
+            hdr[0].text = "Risk"
+            hdr[1].text = "Probability"
+            hdr[2].text = "Impact"
+            hdr[3].text = "Mitigation"
+            for r in risks:
+                row = table.add_row().cells
+                row[0].text = str(r.get('risk', ''))
+                row[1].text = str(r.get('probability', ''))
+                row[2].text = str(r.get('impact', ''))
+                row[3].text = str(r.get('mitigation', ''))
+        else:
+             self.doc.add_paragraph("No specific risks identified.")
+
     def add_future_enhancements_section(self):
         """Section 11: Future Enhancements."""
         self.doc.add_heading('11. Future Enhancements', level=1)
@@ -918,54 +1070,12 @@ def generate_srs_document(
     image_paths: Dict[str, str],
     output_path: str,
     authors: List[str] = None,
-    organization: str = "Organization Name"
+    organization: str = "Organization Name",
+    sections: Dict[str, Any] = None,
+    mode: str = "quick"
 ) -> str:
     """
-    Generate a complete SRS document from JSON data with Table of Contents.
-    
-    Args:
-        project_name: Name of the project
-        introduction_section: Introduction section data
-        overall_description_section: Overall description section data
-        system_features_section: System features section data
-        external_interfaces_section: External interfaces section data
-        nfr_section: Non-functional requirements section data
-        glossary_section: Glossary section data
-        assumptions_section: Assumptions section data
-        image_paths: Dictionary with paths to interface diagrams
-            Expected keys: 'user_interfaces', 'hardware_interfaces', 
-                          'software_interfaces', 'communication_interfaces'
-        output_path: Path where the document should be saved
-        authors: List of document author names (default: ["Author Name"])
-        organization: Organization name (default: "Organization Name")
-    
-    Returns:
-        str: Path to the generated document
-    
-    Example:
-        ```python
-        image_paths = {
-            'user_interfaces': './static/HireSmart_user_interfaces_diagram.png',
-            'hardware_interfaces': './static/HireSmart_hardware_interfaces_diagram.png',
-            'software_interfaces': './static/HireSmart_software_interfaces_diagram.png',
-            'communication_interfaces': './static/HireSmart_communication_interfaces_diagram.png'
-        }
-        
-        generate_srs_document(
-            project_name="HireSmart",
-            introduction_section=intro_data,
-            overall_description_section=desc_data,
-            system_features_section=features_data,
-            external_interfaces_section=interfaces_data,
-            nfr_section=nfr_data,
-            glossary_section=glossary_data,
-            assumptions_section=assumptions_data,
-            image_paths=image_paths,
-            output_path="./output/HireSmart_SRS.docx",
-            authors=["John Doe", "Jane Smith"],
-            organization="ABC Corporation"
-        )
-        ```
+    Generate a complete SRS document.
     """
     # Create generator instance
     generator = SRSDocumentGenerator(project_name, authors, organization)
@@ -982,7 +1092,7 @@ def generate_srs_document(
 
     # Add all sections (proper SRS structure 1–11 with diagram placeholders)
     generator.add_introduction_section(introduction_section)
-    generator.add_feasibility_section() # Added Feasibility
+    generator.add_feasibility_section() 
     generator.add_overall_description_section(overall_description_section)
     generator.add_system_architecture_section()
     generator.add_system_features_section(system_features_section)
@@ -993,6 +1103,10 @@ def generate_srs_document(
     generator.add_external_interfaces_section(external_interfaces_section, image_paths)
     generator.add_assumptions_section(assumptions_section)
     generator.add_future_enhancements_section()
+    
+    # Strict Appending for High Quality Mode
+    if mode in ["full", "enhanced"] and sections:
+        generator.add_detailed_appendices(sections)
     
     # Add header and footer (must be after all content is added)
     generator._apply_layout_to_all_sections()

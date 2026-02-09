@@ -8,7 +8,7 @@ if not exist "node_modules" (
     npm install
 )
 echo Launching Python Backend (FastAPI)...
-start "DocuVerse Python Backend" cmd /k "call ..\venv\Scripts\activate && uvicorn backend.beta.main:app --reload --port 8000"
+start "DocuVerse Python Backend" cmd /k "call ..\venv\Scripts\activate && cd .. && uvicorn backend.beta.main:app --reload --port 8000"
 
 echo Launching Node.js...
 node server.js

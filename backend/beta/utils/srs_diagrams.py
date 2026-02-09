@@ -210,6 +210,74 @@ def data_erd_diagram(inputs: dict) -> str:
     }}"""
 
 
+def sequence_diagram(inputs: dict) -> str:
+    """Sequence diagram: typical object interaction for a core feature."""
+    users = _users(inputs)
+    actor = _safe_label(users[0] if users else "User", 15)
+    return f"""sequenceDiagram
+    participant U as {actor}
+    participant FE as Frontend
+    participant API as Backend API
+    participant DB as Database
+    participant EXT as External Service
+
+    U->>FE: Initiates Action
+    FE->>API: POST /resource
+    API->>AUTH: Validate Token
+    AUTH-->>API: Token Valid
+    API->>DB: Query Data
+    DB-->>API: Return Record
+    alt Cache Miss
+        API->>EXT: Fetch Supplemental Data
+        EXT-->>API: Data Payload
+    end
+    API->>DB: Update State
+    DB-->>API: Success
+    API-->>FE: 200 OK (JSON)
+    FE-->>U: Updates UI Component"""
+
+
+def state_diagram(inputs: dict) -> str:
+    """State diagram: lifecycle of a core entity (e.g. Order, Ticket)."""
+    return """stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: User Finalizes
+    Submitted --> Processing: System Picks Up
+    Processing --> AwaitingApproval: High Value?
+    AwaitingApproval --> Approved: Admin Reviews
+    AwaitingApproval --> Rejected: Admin Denies
+    Approved --> Fulfillment
+    Processing --> Fulfillment: Standard Flow
+    Fulfillment --> Completed: Delivery Confirmed
+    Completed --> [*]
+    Rejected --> Draft: User Edits
+    Fulfillment --> Cancelled: User Cancels"""
+
+
+def ui_local_diagram(inputs: dict) -> str:
+    """Abstract UI Wireframe using Mermaid quadrant chart or flowchart."""
+    # Using flowchart to simulate a wireframe layout
+    title = _safe_label(_project_name(inputs), 20)
+    return f"""flowchart TB
+    subgraph Browser["Browser Window - {title}"]
+        direction TB
+        Header["[ Logo | Navigation Menu | User Profile ]"]
+        subgraph Body["Main Content Area"]
+            direction LR
+            Sidebar["[ Dashboard | Reports | Settings ]"]
+            Content["[ Data Overview Charts | Recent Activity Table | Quick Actions ]"]
+        end
+        Footer["[ Copyright | Links | Contact ]"]
+    end
+    Header --- Body
+    Body --- Footer
+    style Browser fill:#f9f9f9,stroke:#333,stroke-width:2px,color:#000
+    style Header fill:#e1e1e1,stroke:#666,stroke-dasharray: 5 5
+    style Sidebar fill:#eee,stroke:#999
+    style Content fill:#fff,stroke:#333,stroke-width:1px
+    style Footer fill:#e1e1e1,stroke:#none"""
+
+
 def get_all_srs_diagrams(inputs: dict) -> Dict[str, str]:
     """Return all 6 Mermaid diagram codes keyed by diagram type."""
     return {
@@ -219,4 +287,7 @@ def get_all_srs_diagrams(inputs: dict) -> Dict[str, str]:
         "user_workflow": user_workflow_diagram(inputs),
         "security_flow": security_flow_diagram(inputs),
         "data_erd": data_erd_diagram(inputs),
+        "sequence_diagram": sequence_diagram(inputs),
+        "state_diagram": state_diagram(inputs),
+        "ui_local_diagram": ui_local_diagram(inputs),
     }

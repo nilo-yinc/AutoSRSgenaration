@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // import { buildEnterpriseDocx } from '../utils/buildEnterpriseDocx'; // Will create next
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Zap } from 'lucide-react';
+import { User, FileText } from 'lucide-react';
 import ProfileSettings from './ProfileSettings';
 
 const EnterpriseForm = () => {
@@ -141,7 +141,7 @@ const EnterpriseForm = () => {
             <nav className="h-16 bg-gray-900/90 backdrop-blur-md border-b border-gray-800 z-50 flex items-center justify-between px-6">
                 <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
                     <div className="p-2 bg-gray-800 rounded-lg group-hover:bg-neon-blue/20 transition duration-300">
-                        <Zap className="text-neon-blue group-hover:scale-110 transition-transform" size={20} />
+                        <FileText className="text-neon-blue group-hover:scale-110 transition-transform" size={20} />
                     </div>
                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight">DocuVerse</span>
                 </div>

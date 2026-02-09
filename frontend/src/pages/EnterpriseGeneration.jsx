@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { User, Zap } from 'lucide-react';
+import { User, FileText, CheckCircle2, XCircle, Download, Sparkles } from 'lucide-react';
 import ProfileSettings from './ProfileSettings';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
@@ -374,7 +374,7 @@ const EnterpriseGeneration = () => {
             <nav className="h-16 bg-gray-900/90 backdrop-blur-md border-b border-gray-800 z-50 flex items-center justify-between px-6">
                 <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
                     <div className="p-2 bg-gray-800 rounded-lg group-hover:bg-neon-blue/20 transition duration-300">
-                        <Zap className="text-neon-blue group-hover:scale-110 transition-transform" size={20} />
+                        <FileText className="text-neon-blue group-hover:scale-110 transition-transform" size={20} />
                     </div>
                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight">DocuVerse</span>
                 </div>
@@ -432,24 +432,26 @@ const EnterpriseGeneration = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center bg-gray-900 border border-red-800 p-10 rounded-2xl shadow-[0_0_50px_rgba(255,0,0,0.2)]"
+                        className="text-center bg-[#11151c] border border-[#2b3137] p-10 rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
                     >
-                        <div className="text-6xl mb-6">❌</div>
-                        <h1 className="text-4xl font-bold text-red-400 mb-4">Generation Failed</h1>
-                        <p className="text-gray-400 mb-8 max-w-lg mx-auto">
+                        <div className="mx-auto mb-6 w-16 h-16 rounded-2xl bg-[#1b1f23] border border-[#2b3137] flex items-center justify-center">
+                            <XCircle className="text-[#d97762]" size={30} />
+                        </div>
+                        <h1 className="text-4xl font-semibold text-[#f5f1e8] mb-4">Generation Failed</h1>
+                        <p className="text-[#b3bbc2] mb-8 max-w-lg mx-auto">
                             {error}
                         </p>
 
                         <div className="flex gap-4 justify-center">
                             <button
                                 onClick={() => navigate('/enterprise/form')}
-                                className="bg-neon-blue text-black font-bold px-8 py-4 rounded-lg hover:bg-cyan-400 transition"
+                                className="bg-[#3a7ca5] text-[#0e1116] font-semibold px-8 py-4 rounded-lg hover:bg-[#2e6b90] transition"
                             >
                                 Back to Form
                             </button>
                             <button
                                 onClick={() => navigate('/dashboard')}
-                                className="border border-gray-600 text-gray-400 px-8 py-4 rounded-lg hover:bg-gray-800 transition"
+                                className="border border-[#3b434b] text-[#b3bbc2] px-8 py-4 rounded-lg hover:bg-[#1b1f23] transition"
                             >
                                 Return to Dashboard
                             </button>
@@ -459,18 +461,20 @@ const EnterpriseGeneration = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center bg-gray-900 border border-gray-800 p-10 rounded-2xl shadow-[0_0_50px_rgba(0,243,255,0.2)]"
+                        className="text-center bg-[#11151c] border border-[#2b3137] p-10 rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
                     >
-                        <div className="text-6xl mb-6">✅</div>
-                        <h1 className="text-4xl font-bold text-white mb-4">Documentation Ready</h1>
-                        <p className="text-gray-400 mb-8 max-w-lg mx-auto">
+                        <div className="mx-auto mb-6 w-16 h-16 rounded-2xl bg-[#1b1f23] border border-[#2b3137] flex items-center justify-center">
+                            <CheckCircle2 className="text-[#55b38b]" size={30} />
+                        </div>
+                        <h1 className="text-4xl font-semibold text-[#f5f1e8] mb-4">Documentation Ready</h1>
+                        <p className="text-[#b3bbc2] mb-8 max-w-lg mx-auto">
                             Your Enterprise SRS document has been generated and downloaded.
                         </p>
                         {hqStatus && (
-                            <p className="text-neon-blue mb-6 max-w-lg mx-auto">{hqStatus}</p>
+                            <p className="text-[#7fb3d4] mb-6 max-w-lg mx-auto">{hqStatus}</p>
                         )}
 
-                        <div className="flex gap-4 justify-center">
+                        <div className="flex flex-wrap gap-4 justify-center">
                             <button
                                 onClick={() => {
                                     if (generatedBlob) {
@@ -490,21 +494,21 @@ const EnterpriseGeneration = () => {
                                             });
                                     }
                                 }}
-                                className="bg-neon-green text-black font-bold px-8 py-3 rounded-lg hover:bg-green-400 transition w-full max-w-sm flex items-center justify-center gap-2"
+                                className="bg-[#55b38b] text-[#0e1116] font-semibold px-8 py-3 rounded-lg hover:bg-[#4aa37d] transition w-full max-w-sm flex items-center justify-center gap-2"
                                 id="manual-download-btn"
                             >
-                                <span>⬇️</span> Download Final
+                                <Download size={16} /> Download Final
                             </button>
                             <button
                                 onClick={handleGenerateHighQuality}
                                 disabled={hqLoading}
                                 className={`font-bold px-8 py-3 rounded-lg transition w-full max-w-sm flex items-center justify-center gap-2 ${
                                     hqLoading
-                                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                        : 'bg-neon-blue text-black hover:bg-cyan-400'
+                                        ? 'bg-[#2b3137] text-[#8e98a0] cursor-not-allowed'
+                                        : 'bg-[#3a7ca5] text-[#0e1116] hover:bg-[#2e6b90]'
                                 }`}
                             >
-                                <span>✨</span> {hqLoading ? 'Generating HQ...' : 'Generate High Quality'}
+                                <Sparkles size={16} /> {hqLoading ? 'Generating HQ...' : 'Generate High Quality'}
                             </button>
                             {hqBlob && (
                                 <button
@@ -525,20 +529,20 @@ const EnterpriseGeneration = () => {
                                                 });
                                         }
                                     }}
-                                    className="bg-neon-purple text-white font-bold px-8 py-3 rounded-lg hover:bg-purple-700 transition w-full max-w-sm flex items-center justify-center gap-2"
+                                    className="bg-[#c58a62] text-[#0e1116] font-semibold px-8 py-3 rounded-lg hover:bg-[#b87852] transition w-full max-w-sm flex items-center justify-center gap-2"
                                 >
-                                    <span>⬇️</span> Download HQ Again
+                                    <Download size={16} /> Download HQ Again
                                 </button>
                             )}
                             <button
                                 onClick={() => navigate('/enterprise/form')}
-                                className="bg-neon-blue text-black font-bold px-8 py-4 rounded-lg hover:bg-cyan-400 transition"
+                                className="bg-[#1b1f23] text-[#f5f1e8] font-semibold px-8 py-4 rounded-lg border border-[#2b3137] hover:bg-[#232a31] transition"
                             >
                                 Generate Another
                             </button>
                             <button
                                 onClick={() => navigate('/dashboard')}
-                                className="border border-gray-600 text-gray-400 px-8 py-4 rounded-lg hover:bg-gray-800 transition"
+                                className="border border-[#3b434b] text-[#b3bbc2] px-8 py-4 rounded-lg hover:bg-[#1b1f23] transition"
                             >
                                 Return to Dashboard
                             </button>

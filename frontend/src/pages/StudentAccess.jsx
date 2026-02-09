@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import api from '../api/client';
 import { Eye, EyeOff, CheckCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const StudentAccess = () => {
     const navigate = useNavigate();
-    const { login: contextLogin } = useAuth();
+    const { login: contextLogin, token } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -18,6 +18,12 @@ const StudentAccess = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+
+    useEffect(() => {
+        if (token) {
+            navigate('/student/coming-soon');
+        }
+    }, [token, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,14 +38,14 @@ const StudentAccess = () => {
                 if (res.success) {
                     setSuccessMsg("Lab Access Granted");
                     setTimeout(() => {
-                        navigate('/wizard');
+                        navigate('/student/coming-soon');
                     }, 1500);
                 } else {
                     setError(res.msg || 'Login failed');
                 }
             } else {
                 // Registration Flow
-                const res = await axios.post('/api/v1/users/register', { name, email, password });
+                const res = await api.post('/users/register', { name, email, password });
                 if (res.status === 201 || res.data) {
                     setSuccessMsg("Registration Successful! Please sign in.");
                     setTimeout(() => {

@@ -169,6 +169,9 @@ def _build_image_paths(project_key: str) -> dict:
         "user_workflow": Path(f"./backend/beta/static/{project_key}_user_workflow.png"),
         "security_flow": Path(f"./backend/beta/static/{project_key}_security_flow.png"),
         "data_erd": Path(f"./backend/beta/static/{project_key}_data_erd.png"),
+        "sequence_diagram": Path(f"./backend/beta/static/{project_key}_sequence_diagram.png"),
+        "state_diagram": Path(f"./backend/beta/static/{project_key}_state_diagram.png"),
+        "ui_local_diagram": Path(f"./backend/beta/static/{project_key}_ui_local_diagram.png"),
     }
 
 
@@ -330,7 +333,12 @@ def _map_ai_to_sections(inputs: dict, ai: dict) -> dict:
             if isinstance(item, dict):
                 user_class = str(item.get("user_class", "")).strip()
                 if user_class:
-                    classes.append({"user_class": user_class})
+                    classes.append({
+                        "user_class": user_class,
+                        "characteristics": str(item.get("characteristics", "")).strip(),
+                        "responsibilities": str(item.get("responsibilities", "")).strip(),
+                        "skills": str(item.get("skills", "")).strip()
+                    })
         if classes:
             sections["overall_description_section"]["user_classes_and_characteristics"]["user_classes"] = classes
 
@@ -349,12 +357,16 @@ def _map_ai_to_sections(inputs: dict, ai: dict) -> dict:
                 continue
             description = str(item.get("description", "")).strip()
             requirements = _to_list(item.get("requirements"))
+            structured = item.get("structured_requirements", {})
+            
             if not requirements:
                 requirements = [f"Support: {feature_name}"]
+            
             features.append({
                 "feature_name": feature_name,
                 "description": description,
                 "functional_requirements": [{"description": req} for req in requirements],
+                "structured_requirements": structured if isinstance(structured, dict) else {}
             })
         if features:
             sections["system_features_section"]["features"] = features
@@ -369,6 +381,10 @@ def _map_ai_to_sections(inputs: dict, ai: dict) -> dict:
         sections["nfr_section"]["security_requirements"]["requirements"] = [{"description": s} for s in security]
     if reliability:
         sections["nfr_section"]["safety_requirements"]["requirements"] = [{"description": r} for r in reliability]
+
+    risk_ai = ai.get("risk_analysis")
+    if isinstance(risk_ai, list):
+        sections["risk_analysis"] = [r for r in risk_ai if isinstance(r, dict)]
 
     return sections
 
@@ -453,12 +469,72 @@ def _build_sections_with_ai(inputs: dict, project_name: str, project_key: str = 
             if project_key:
                 _set_progress(project_key, "ai", 25, "Generating detailed requirements with AI...")
             import google.generativeai as genai
-            import os
             
             genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
             
+            detail_instruction = "Ensure the content is concise but professional."
+            json_structure = """
+                "functional_requirements": [
+                    {
+                        "feature_name": "Feature Name",
+                        "description": "2-3 feature description.",
+                        "requirements": ["Req 1", "Req 2", "Req 3"]
+                    }
+                ],
+                "overall_description": {
+                    "product_perspective": "...",
+                    "user_characteristics": [
+                        {"user_class": "Admin", "characteristics": "..."} 
+                    ],
+                    "assumptions": [...]
+                }
+            """
+
+            if mode in ["full", "enhanced"]:
+                detail_instruction = (
+                    "PROVIDE EXTENSIVE ENTERPRISE-GRADE DETAIL. "
+                    "Write comprehensive, professional paragraphs (100-150 words) for descriptions. "
+                    "Use structured data for tables."
+                )
+                json_structure = """
+                "functional_requirements": [
+                    {
+                        "feature_name": "Feature Name",
+                        "description": "Detailed description of the feature.",
+                        "requirements": ["Req 1", "Req 2"],
+                        "structured_requirements": {
+                             "inputs": "User ID, Password...",
+                             "outputs": "Dashboard, Error Message...",
+                             "acceptance_criteria": "User must be redirected within 2s..."
+                        }
+                    }
+                ],
+                "overall_description": {
+                    "product_perspective": "Detailed 200-word perspective...",
+                    "user_characteristics": [
+                        {
+                            "user_class": "Admin", 
+                            "characteristics": "System administrator...",
+                            "responsibilities": "System config, User management",
+                            "skills": "High technical proficiency"
+                        } 
+                    ],
+                    "assumptions": [...]
+                },
+                "risk_analysis": [
+                    {
+                        "risk": "Data Breach",
+                        "probability": "Low",
+                        "impact": "High",
+                        "mitigation": "Encryption at rest..."
+                    }
+                ]
+                """
+
             prompt = f"""
             You are an expert Senior Technical Writer. I need you to generate a comprehensive IEEE 830 Software Requirements Specification (SRS) in JSON format.
+            
+            {detail_instruction}
             
             Project Input Data:
             {json.dumps(inputs, indent=2)}
@@ -479,21 +555,7 @@ def _build_sections_with_ai(inputs: dict, project_name: str, project_key: str = 
                          {{"term": "Term1", "definition": "Def1"}}
                     ]
                 }},
-                "overall_description": {{
-                    "product_perspective": "Detailed paragraph about how this product fits into the business/environment.",
-                    "user_characteristics": [
-                        {{"user_class": "Admin", "characteristics": "Technical user..."}},
-                        {{"user_class": "End User", "characteristics": "Non-technical..."}}
-                    ],
-                    "assumptions": ["List of 3-5 technical assumptions"]
-                }},
-                "functional_requirements": [
-                    {{
-                        "feature_name": "Feature Name",
-                        "description": "2-3 feature description.",
-                        "requirements": ["Req 1", "Req 2", "Req 3"]
-                    }}
-                ],
+                {json_structure},
                 "non_functional_requirements": {{
                     "performance": ["Req 1", "Req 2"],
                     "security": ["Req 1", "Req 2"],
@@ -565,7 +627,9 @@ def _generate_document(project_name: str, project_key: str, inputs: dict, sectio
         image_paths=image_paths,
         output_path=_output_path(project_key, variant),
         authors=inputs["project_identity"]["author"],
-        organization=inputs["project_identity"]["organization"]
+        organization=inputs["project_identity"]["organization"],
+        sections=sections,
+        mode=variant
     )
 
 

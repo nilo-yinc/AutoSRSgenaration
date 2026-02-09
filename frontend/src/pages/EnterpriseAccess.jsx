@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import api from '../api/client';
 import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const EnterpriseAccess = () => {
     const navigate = useNavigate();
-    const { login: contextLogin } = useAuth();
+    const { login: contextLogin, register, token } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -18,6 +18,12 @@ const EnterpriseAccess = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+
+    useEffect(() => {
+        if (token) {
+            navigate('/enterprise/form');
+        }
+    }, [token, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,7 +36,7 @@ const EnterpriseAccess = () => {
                 // Login Flow using context
                 const res = await contextLogin(email, password);
                 if (res.success) {
-                    setSuccessMsg("Access Granted Successfully");
+                    setSuccessMsg(res.msg || "Access Granted Successfully");
                     setTimeout(() => {
                         navigate('/enterprise/form');
                     }, 1500);
@@ -38,20 +44,22 @@ const EnterpriseAccess = () => {
                     setError(res.msg || 'Login failed');
                 }
             } else {
-                // Registration Flow
-                const res = await axios.post('/api/v1/users/register', { name, email, password });
-                if (res.status === 201 || res.data) {
-                    setSuccessMsg("Registration Successful! Please sign in.");
+                // Registration Flow using context
+                const res = await register(name, email, password);
+                if (res.success) {
+                    setSuccessMsg(res.msg || "Registration Successful! Please sign in.");
                     setTimeout(() => {
                         setIsLogin(true);
                         setSuccessMsg('');
                         setPassword(''); // Clear password for security
                     }, 2000);
+                } else {
+                    setError(res.msg || 'Registration failed');
                 }
             }
         } catch (err) {
             console.error(err);
-            const msg = err.response?.data?.message || err.message || "Authentication failed. Please check your credentials.";
+            const msg = err.response?.data?.message || err.message || "Authentication failed.";
             setError(msg);
         } finally {
             setLoading(false);
