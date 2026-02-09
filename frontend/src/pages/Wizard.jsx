@@ -6,15 +6,18 @@ import { saveAs } from 'file-saver';
 import GenerationConsole from '../components/GenerationConsole';
 import { useAuth } from '../context/AuthContext';
 import { buildLabReportDocx } from '../utils/buildLabReportDocx';
+import { User, Zap } from 'lucide-react';
+import ProfileSettings from './ProfileSettings';
 
 const Wizard = () => {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [consoleOpen, setConsoleOpen] = useState(false);
     const [projectId, setProjectId] = useState(null);
     const [logs, setLogs] = useState([]);
+    const [showProfile, setShowProfile] = useState(false);
 
     const initialEffort = 2.4 * Math.pow(5, 1.05);
     const initialTime = 2.5 * Math.pow(initialEffort, 0.38);
@@ -192,7 +195,37 @@ const Wizard = () => {
     };
 
     return (
-        <div className="flex h-screen bg-black text-white p-10 font-mono">
+        <div className="flex flex-col h-screen bg-black text-white font-mono">
+            {/* Top Navigation Bar with Profile */}
+            <nav className="h-16 bg-gray-900/90 backdrop-blur-md border-b border-gray-800 z-50 flex items-center justify-between px-6">
+                <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
+                    <div className="p-2 bg-gray-800 rounded-lg group-hover:bg-neon-purple/20 transition duration-300">
+                        <Zap className="text-neon-purple group-hover:scale-110 transition-transform" size={20} />
+                    </div>
+                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight">DocuVerse</span>
+                </div>
+
+                <div className="flex items-center gap-6">
+                    <div className="text-right hidden sm:block">
+                        <div className="text-sm font-bold text-white tracking-wide">{user?.name || 'User'}</div>
+                        <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Student Lab</div>
+                    </div>
+
+                    <div
+                        onClick={() => setShowProfile(true)}
+                        className="w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-700 hover:border-neon-purple cursor-pointer flex items-center justify-center overflow-hidden transition-all duration-300 hover:shadow-[0_0_15px_rgba(188,19,254,0.3)]"
+                    >
+                        {user?.profilePic ? (
+                            <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="text-gray-400" size={20} />
+                        )}
+                    </div>
+                </div>
+            </nav>
+
+            {/* Main Content Area */}
+            <div className="flex flex-1 p-10 overflow-hidden">
             <GenerationConsole isOpen={consoleOpen} logs={logs} onComplete={generateDocx} />
 
             <div className="w-1/4 border-r border-gray-800 pr-10">
@@ -324,6 +357,10 @@ const Wizard = () => {
                     <button onClick={() => setStep(Math.min(5, step + 1))} className={`bg-white text-black px-6 py-2 rounded font-bold ${step === 5 ? 'invisible' : ''}`}>Next →</button>
                 </div>
             </div>
+            </div>
+
+            {/* Profile Modal */}
+            {showProfile && <ProfileSettings onClose={() => setShowProfile(false)} />}
         </div>
     );
 };

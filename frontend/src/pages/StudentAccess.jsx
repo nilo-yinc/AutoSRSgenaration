@@ -27,13 +27,15 @@ const StudentAccess = () => {
 
         try {
             if (isLogin) {
-                // Login Flow
-                const res = await axios.post('/api/v1/users/login', { email, password });
-                if (res.data.token) {
+                // Login Flow using context
+                const res = await contextLogin(email, password);
+                if (res.success) {
                     setSuccessMsg("Lab Access Granted");
                     setTimeout(() => {
                         navigate('/wizard');
                     }, 1500);
+                } else {
+                    setError(res.msg || 'Login failed');
                 }
             } else {
                 // Registration Flow
@@ -178,7 +180,7 @@ const StudentAccess = () => {
                             {isLogin ? 'Register Access' : 'Sign In'}
                         </span>
                     </div>
-                    <div className="mt-6 text-center text-xs text-gray-600 cursor-pointer hover:text-gray-400 transition" onClick={() => navigate('/')}>
+                    <div className="mt-6 text-center text-xs text-gray-600 cursor-pointer hover:text-gray-400 transition" onClick={() => navigate('/dashboard')}>
                         ← Return to Dashboard
                     </div>
                 </form>

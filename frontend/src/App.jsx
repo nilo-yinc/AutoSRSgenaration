@@ -12,8 +12,8 @@ import LandingPage from './pages/Landing';
 
 const PrivateRoute = ({ children }) => {
   const { token, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
-  return token ? children : <Navigate to="/login" />;
+  if (loading) return <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center"><div>Loading...</div></div>;
+  return token ? children : <Navigate to="/dashboard" />;
 };
 
 function App() {
@@ -22,10 +22,16 @@ function App() {
       <AuthProvider>
         <div className="min-h-screen bg-dark-bg text-white">
           <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/demo/:id" element={<Demo />} />
+            
+            {/* Authentication Pages */}
             <Route path="/enterprise/access" element={<EnterpriseAccess />} />
             <Route path="/student/access" element={<StudentAccess />} />
+            
+            {/* Protected Routes - Require Authentication */}
             <Route path="/enterprise/form" element={
               <PrivateRoute>
                 <EnterpriseForm />
@@ -36,13 +42,6 @@ function App() {
                 <EnterpriseGeneration />
               </PrivateRoute>
             } />
-
-            <Route path="/dashboard" element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } />
-            <Route path="/" element={<LandingPage />} />
             <Route path="/wizard" element={
               <PrivateRoute>
                 <Wizard />

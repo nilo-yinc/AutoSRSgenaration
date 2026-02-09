@@ -96,7 +96,7 @@ const LandingPage = () => {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-6 justify-center">
                         <button
-                            onClick={() => navigate('/enterprise/access')}
+                            onClick={() => navigate('/dashboard')}
                             className="hero-btn group relative px-8 py-4 bg-gray-900 border border-neon-blue/50 rounded-xl overflow-hidden hover:border-neon-blue transition-all"
                         >
                             <div className="absolute inset-0 bg-neon-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
@@ -111,7 +111,7 @@ const LandingPage = () => {
                         </button>
 
                         <button
-                            onClick={() => navigate('/student/access')}
+                            onClick={() => navigate('/dashboard')}
                             className="hero-btn group relative px-8 py-4 bg-gray-900 border border-neon-purple/50 rounded-xl overflow-hidden hover:border-neon-purple transition-all"
                         >
                             <div className="absolute inset-0 bg-neon-purple/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>

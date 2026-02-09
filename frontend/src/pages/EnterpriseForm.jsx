@@ -2,9 +2,14 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // import { buildEnterpriseDocx } from '../utils/buildEnterpriseDocx'; // Will create next
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { User, Zap } from 'lucide-react';
+import ProfileSettings from './ProfileSettings';
 
 const EnterpriseForm = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const [showProfile, setShowProfile] = useState(false);
     const [step, setStep] = useState(1);
 
     // State matching the provided images
@@ -105,9 +110,39 @@ const EnterpriseForm = () => {
     );
 
     return (
-        <div className="min-h-screen bg-dark-bg text-white font-sans flex">
+        <div className="min-h-screen bg-dark-bg text-white font-sans flex flex-col">
+            {/* Top Navigation Bar with Profile */}
+            <nav className="h-16 bg-gray-900/90 backdrop-blur-md border-b border-gray-800 z-50 flex items-center justify-between px-6">
+                <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
+                    <div className="p-2 bg-gray-800 rounded-lg group-hover:bg-neon-blue/20 transition duration-300">
+                        <Zap className="text-neon-blue group-hover:scale-110 transition-transform" size={20} />
+                    </div>
+                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple tracking-tight">DocuVerse</span>
+                </div>
+
+                <div className="flex items-center gap-6">
+                    <div className="text-right hidden sm:block">
+                        <div className="text-sm font-bold text-white tracking-wide">{user?.name || 'User'}</div>
+                        <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Enterprise SRS</div>
+                    </div>
+
+                    <div
+                        onClick={() => setShowProfile(true)}
+                        className="w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-700 hover:border-neon-blue cursor-pointer flex items-center justify-center overflow-hidden transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+                    >
+                        {user?.profilePic ? (
+                            <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="text-gray-400" size={20} />
+                        )}
+                    </div>
+                </div>
+            </nav>
+
+            {/* Main Content with Sidebar */}
+            <div className="flex flex-1">
             {/* Left Sidebar Steps */}
-            <div className="w-64 bg-gray-900 border-r border-gray-800 p-6 fixed h-full overflow-y-auto">
+            <div className="w-64 bg-gray-900 border-r border-gray-800 p-6 overflow-y-auto">
                 <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple mb-8">
                     SRS Generator
                 </h1>
@@ -128,7 +163,7 @@ const EnterpriseForm = () => {
             </div>
 
             {/* Main Content */}
-            <div className="ml-64 flex-1 p-10 max-w-4xl">
+            <div className="flex-1 p-10 max-w-4xl overflow-y-auto">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={step}
@@ -272,6 +307,10 @@ const EnterpriseForm = () => {
                     )}
                 </div>
             </div>
+            </div>
+
+            {/* Profile Modal */}
+            {showProfile && <ProfileSettings onClose={() => setShowProfile(false)} />}
         </div>
     );
 };
