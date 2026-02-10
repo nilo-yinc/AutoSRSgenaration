@@ -12,9 +12,93 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Generate short unique shareId
 const generateShareId = () => require('crypto').randomBytes(6).toString('hex');
 
+const buildMarkdownFromSrsRequest = (srsRequest) => {
+    if (!srsRequest) return "# System Requirements\n\nStart typing...";
+    const pi = srsRequest.project_identity || {};
+    const fs = srsRequest.functional_scope || {};
+    const nfr = srsRequest.non_functional_requirements || {};
+    const sc = srsRequest.system_context || {};
+    const sec = srsRequest.security_and_compliance || {};
+    const tech = srsRequest.technical_preferences || {};
+
+    const lines = [
+        `# ${pi.project_name || 'System Requirements'}`,
+        '',
+        `**Problem Statement:**`,
+        pi.problem_statement || 'Not specified.',
+        '',
+        `**Target Users:**`,
+        (pi.target_users || []).join(', ') || 'Not specified.',
+        '',
+        `**Domain:** ${sc.domain || 'Not specified.'}`,
+        `**Application Type:** ${sc.application_type || 'Not specified.'}`,
+        '',
+        `**Core Features:**`,
+        ...(fs.core_features || ['Not specified.']).map(f => `- ${f}`),
+        '',
+        `**Primary User Flow:**`,
+        fs.primary_user_flow || 'Not specified.',
+        '',
+        `**Non-Functional Requirements:**`,
+        `- Expected Scale: ${nfr.expected_user_scale || 'Not specified.'}`,
+        `- Performance: ${nfr.performance_expectation || 'Not specified.'}`,
+        '',
+        `**Security & Compliance:**`,
+        `- Authentication Required: ${sec.authentication_required ? 'Yes' : 'No'}`,
+        `- Sensitive Data Handling: ${sec.sensitive_data_handling ? 'Yes' : 'No'}`,
+        `- Compliance: ${(sec.compliance_requirements || []).join(', ') || 'None'}`,
+        '',
+        `**Technical Preferences:**`,
+        `- Backend: ${tech.preferred_backend || 'No preference'}`,
+        `- Database: ${tech.database_preference || 'No preference'}`,
+        `- Deployment: ${tech.deployment_preference || 'No preference'}`
+    ];
+
+    return lines.join('\n');
+};
+
 // @route   POST /api/projects/save
 // @desc    Create or Update a project
 // @access  Private
+// @route   PUT /api/projects/:id
+// @desc    Update project content
+// @access  Private
+router.put('/:id', isLoggedIn, async (req, res) => {
+    try {
+        const {
+            contentMarkdown,
+            status,
+            title,
+            documentUrl,
+            reviewedDocumentUrl,
+            reviewFeedback,
+            workflowEvents,
+            insights,
+            clientEmail
+        } = req.body;
+        const project = await Project.findById(req.params.id);
+        
+        if (!project) return res.status(404).json({ msg: 'Project not found' });
+        if (project.userId.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
+
+        if (contentMarkdown !== undefined) project.contentMarkdown = contentMarkdown;
+        if (status !== undefined) project.status = status;
+        if (title !== undefined) project.title = title;
+        if (documentUrl !== undefined) project.documentUrl = documentUrl;
+        if (reviewedDocumentUrl !== undefined) project.reviewedDocumentUrl = reviewedDocumentUrl;
+        if (reviewFeedback !== undefined) project.reviewFeedback = reviewFeedback;
+        if (workflowEvents !== undefined) project.workflowEvents = workflowEvents;
+        if (insights !== undefined) project.insights = insights;
+        if (clientEmail !== undefined) project.clientEmail = clientEmail;
+
+        await project.save();
+        res.json(project);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 router.post('/save', isLoggedIn, async (req, res) => {
     try {
         const { title, domain, teamMembers, techStack, cocomo, diagrams, projectId, isPublic } = req.body;
@@ -99,36 +183,39 @@ router.post('/generate-prototype', isLoggedIn, async (req, res) => {
 // @access  Private
 router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
     try {
-        const { formData } = req.body;
+        const { formData, projectId: bodyProjectId, mode = 'quick' } = req.body;
         
         // 1. Map frontend formData to Python Backend SRSRequest Schema
+        const safePerformance = formData.performance || '';
+        const safeUserScale = formData.userScale || '';
+        const safeDetailLevel = formData.detailLevel || '';
         const srsRequest = {
             project_identity: {
-                project_name: formData.projectName,
+                project_name: formData.projectName || 'Untitled Project',
                 author: formData.authors ? formData.authors.split('\n').filter(Boolean) : ['Unknown'],
                 organization: formData.organization || 'Unspecified',
-                problem_statement: formData.problemStatement,
-                target_users: formData.targetUsers.length > 0 ? formData.targetUsers : ['End User']
+                problem_statement: formData.problemStatement || 'No problem statement provided.',
+                target_users: (formData.targetUsers && formData.targetUsers.length > 0) ? formData.targetUsers : ['End User']
             },
             system_context: {
-                application_type: formData.appType,
-                domain: formData.domain
+                application_type: formData.appType || 'Web Application',
+                domain: formData.domain || 'General'
             },
             functional_scope: {
                 core_features: formData.coreFeatures ? formData.coreFeatures.split('\n').filter(Boolean) : ['Default Feature'],
-                primary_user_flow: formData.userFlow
+                primary_user_flow: formData.userFlow || 'Standard user flow.'
             },
             non_functional_requirements: {
-                expected_user_scale: formData.userScale === '< 100 Users' ? '<100' :
-                                   formData.userScale === '100 - 1,000 Users' ? '100-1k' :
-                                   formData.userScale === '1,000 - 10,000 Users' ? '1k-100k' : '>100k',
-                performance_expectation: formData.performance.includes('Standard') ? 'Normal' :
-                                       formData.performance.includes('High') ? 'High' : 'Real-time'
+                expected_user_scale: safeUserScale === '< 100 Users' ? '<100' :
+                                   safeUserScale === '100 - 1,000 Users' ? '100-1k' :
+                                   safeUserScale === '1,000 - 10,000 Users' ? '1k-100k' : '>100k',
+                performance_expectation: safePerformance.includes('Standard') ? 'Normal' :
+                                       safePerformance.includes('High') ? 'High' : 'Real-time'
             },
             security_and_compliance: {
                 authentication_required: formData.authRequired === 'Yes',
                 sensitive_data_handling: formData.sensitiveData === 'Yes',
-                compliance_requirements: formData.compliance
+                compliance_requirements: formData.compliance || []
             },
             technical_preferences: {
                 preferred_backend: formData.backendPref !== 'No Preference' ? formData.backendPref : null,
@@ -137,20 +224,53 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
             },
             output_control: {
                 // Map frontend "Standard", "Professional", "Brief" to backend valid levels
-                srs_detail_level: formData.detailLevel.includes('Professional') ? 'Enterprise-grade' :
-                                formData.detailLevel.includes('Standard') ? 'Technical' : 'High-level'
+                srs_detail_level: safeDetailLevel.includes('Professional') ? 'Enterprise-grade' :
+                                safeDetailLevel.includes('Standard') ? 'Technical' : 'High-level'
             }
         };
+        console.log("DEBUG: srsRequest constructed:", JSON.stringify(srsRequest, null, 2));
 
         // 2. Save Project Reference FIRST to generate ID and Link
-        const shareId = require('crypto').randomBytes(6).toString('hex');
-        const project = new Project({
-            userId: req.user.id,
-            title: formData.projectName,
-            domain: formData.domain,
-            enterpriseData: srsRequest, // Initial data
-            shareId: shareId
-        });
+        let resolvedProjectId = bodyProjectId || formData.projectId;
+        if (resolvedProjectId === 'null' || resolvedProjectId === 'undefined' || !resolvedProjectId) {
+            resolvedProjectId = null;
+        }
+        
+        let project;
+        if (resolvedProjectId) {
+            project = await Project.findById(resolvedProjectId);
+            if (!project) return res.status(404).json({ msg: 'Project not found' });
+            if (project.userId.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
+            project.title = formData.projectName || 'Untitled Project';
+            project.domain = formData.domain || 'General';
+            project.enterpriseData = srsRequest;
+            project.status = 'DRAFT';
+            project.workflowEvents = project.workflowEvents || [];
+            project.workflowEvents.push({
+                date: new Date().toISOString(),
+                title: 'Document Updated',
+                description: `SRS regenerated in ${mode} mode.`,
+                status: 'DRAFT'
+            });
+        } else {
+            let shareId = generateShareId();
+            while (await Project.findOne({ shareId })) shareId = generateShareId();
+
+            project = new Project({
+                userId: req.user.id,
+                title: formData.projectName || 'Untitled Project',
+                domain: formData.domain || 'General',
+                enterpriseData: srsRequest,
+                shareId: shareId,
+                status: 'DRAFT',
+                workflowEvents: [{
+                    date: new Date().toISOString(),
+                    title: 'Project Created',
+                    description: 'Draft initialized via Enterprise Wizard.',
+                    status: 'DRAFT'
+                }]
+            });
+        }
         await project.save();
 
         // 3. Inject Live Link and ID into SRS Request
@@ -158,19 +278,31 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
         srsRequest.project_identity.project_id = project._id.toString();
 
         // 4. Call Python Backend (with expanded data)
-        // Assuming Python backend runs on port 8000
-        const pythonResponse = await axios.post('http://127.0.0.1:8000/generate_srs', srsRequest);
+        // Pass mode=quick by default to match the frontend expectation and performance
+        const pythonResponse = await axios.post(`http://127.0.0.1:8000/generate_srs?mode=${mode}`, srsRequest);
+        const downloadUrl = pythonResponse.data.download_url;
+
+        // 4b. Save document URL + initial requirements markdown to project
+        if (project.documentUrl && project.documentUrl !== downloadUrl) {
+            project.reviewedDocumentUrl = project.documentUrl;
+        }
+        project.documentUrl = downloadUrl;
+        project.contentMarkdown = buildMarkdownFromSrsRequest(srsRequest);
+        await project.save();
         
         // 5. Send webhook notification
         await n8nWebhookService.notifySRSGenerated({
             ...project.toObject(),
-            srsDocumentPath: pythonResponse.data.download_url,
-            downloadUrl: pythonResponse.data.download_url
+            srsDocumentPath: downloadUrl,
+            downloadUrl: downloadUrl
         });
         
-        // 6. Return Download URL
+        // 6. Return Download URL and Project ID
         // The Python backend returns a relative download_url like /download_srs/Filename.docx
-        res.json({ srs_document_path: pythonResponse.data.download_url });
+        res.json({ 
+            srs_document_path: downloadUrl,
+            projectId: project._id 
+        });
 
     } catch (err) {
         console.error("Enterprise Generation Error:", err.message);
@@ -178,9 +310,28 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
             console.error("Python Backend Error:", err.response.data);
             return res.status(500).json({ msg: 'Generation Engine Failed', details: err.response.data });
         }
+        res.status(500).json({ msg: err.message || 'Server Error' });
+    }
+});
+
+// @route   GET /api/projects/:id
+// @desc    Get project by ID
+// @access  Private
+router.get('/:id', isLoggedIn, async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id);
+        if (!project) return res.status(404).json({ msg: 'Project not found' });
+        if (project.userId.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
+        res.json(project);
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') return res.status(404).json({ msg: 'Project not found' });
         res.status(500).send('Server Error');
     }
 });
+
+// @route   GET /api/projects
+// @desc    Get all projects for user
 
 // @route   GET /api/projects
 // @desc    Get all projects for user
@@ -221,6 +372,23 @@ router.get('/demo/:id', async (req, res) => {
         }
         res.setHeader('Content-Type', 'text/html');
         res.send(project.prototypeHtml);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   DELETE /api/projects/:id
+// @desc    Delete project
+// @access  Private
+router.delete('/:id', isLoggedIn, async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id);
+        if (!project) return res.status(404).json({ msg: 'Project not found' });
+        if (project.userId.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
+
+        await project.deleteOne();
+        res.json({ success: true });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

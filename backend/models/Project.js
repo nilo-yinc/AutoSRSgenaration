@@ -55,6 +55,39 @@ const ProjectSchema = new mongoose.Schema({
     enterpriseData: {
         type: Object, // Stores the full SRSRequest JSON
         required: false
+    },
+    documentUrl: {
+        type: String,
+        required: false
+    },
+    reviewedDocumentUrl: {
+        type: String,
+        required: false
+    },
+    reviewFeedback: {
+        type: Array,
+        default: []
+    },
+    workflowEvents: {
+        type: Array,
+        default: []
+    },
+    insights: {
+        type: Array,
+        default: []
+    },
+    clientEmail: {
+        type: String,
+        required: false
+    },
+    contentMarkdown: {
+        type: String,
+        required: false
+    },
+    status: {
+        type: String,
+        enum: ['DRAFT', 'IN_REVIEW', 'APPROVED', 'CHANGES_REQUESTED'],
+        default: 'DRAFT'
     }
 }, { timestamps: true });
 
