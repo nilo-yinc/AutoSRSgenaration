@@ -29,12 +29,7 @@ An intelligent multi-agent system that automates SRS creation using **Google Gem
 ---
 
 ## 📸 Screenshots
-
-<img width="450" height="946" alt="image" src="https://github.com/user-attachments/assets/0996958c-390c-4ac2-b027-33b867c68641" />
-<img width="1916" height="935" alt="image" src="https://github.com/user-attachments/assets/3dd14274-f827-42b9-949f-3e7c58bca7e4" />
-
-
-<img width="1904" height="1031" alt="Screenshot 2026-02-09 095326" src="https://github.com/user-attachments/assets/2423ad7d-cbb3-4784-834f-f3b40da7b15c" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b67b8d09-3e0d-48f5-b6d4-2b55751b8b85" />
 
 
 ---
