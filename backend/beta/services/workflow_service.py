@@ -6,43 +6,15 @@ from fastapi import HTTPException
 from backend.beta.utils.model import GEMINI_API_KEY, GROQ_API_KEY, GROQ_MODEL
 from litellm import completion as litellm_completion
 
-# Default n8n webhook base URL (can be overridden by env var)
-# Example: https://n8n.yourdomain.com/webhook/
-N8N_BASE_URL = os.getenv("N8N_WEBHOOK_URL")
-
 class WorkflowService:
     @staticmethod
     async def execute_workflow(workflow_type: str, payload: dict):
         """
-        Executes a workflow either via n8n (if configured) or locally (fallback).
-        
-        Args:
-            workflow_type (str): 'analyze', 'chat', or 'diagram'
-            payload (dict): The data to process (content, query, history, etc.)
+        Executes a workflow locally.
         """
-        
-        # --- MODE A: n8n Webhook ---
-        if N8N_BASE_URL:
-            try:
-                # Construct webhook URL (e.g., .../webhook/analyze_notebook)
-                webhook_url = f"{N8N_BASE_URL.rstrip('/')}/{workflow_type}"
-                
-                print(f"DEBUG: Triggering n8n workflow: {webhook_url}")
-                response = requests.post(webhook_url, json=payload, timeout=30)
-                
-                if response.status_code == 200:
-                    return response.json()
-                else:
-                    print(f"ERROR: n8n returned {response.status_code}: {response.text}")
-                    # If n8n fails, we can optionally fall back to local, 
-                    # but for now let's raise/log and fall back to local to ensure continuity.
-                    print("Falling back to local execution due to n8n error.")
-            except Exception as e:
-                print(f"ERROR: Failed to connect to n8n: {e}")
-                print("Falling back to local execution.")
-
-        # --- MODE B: Local Fallback (Gemini) ---
+        # --- Directly use local fallback ---
         return await WorkflowService._execute_local(workflow_type, payload)
+
 
     @staticmethod
     async def _execute_local(workflow_type: str, payload: dict):

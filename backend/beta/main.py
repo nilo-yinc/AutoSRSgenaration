@@ -1053,7 +1053,7 @@ from backend.beta.services.workflow_service import WorkflowService
 @app.post("/api/notebook/analyze")
 async def analyze_notebook(request: NotebookRequest):
     """
-    Analyzes notebook content via WorkflowService (n8n or Local Gemini).
+    Analyzes notebook content via WorkflowService (Local Gemini).
     """
     try:
         payload = {"content": request.content}
@@ -1066,7 +1066,7 @@ async def analyze_notebook(request: NotebookRequest):
 @app.post("/api/notebook/chat")
 async def chat_notebook(request: NotebookChatRequest):
     """
-    Context-aware chat via WorkflowService (n8n or Local Gemini).
+    Context-aware chat via WorkflowService (Local Gemini).
     """
     try:
         payload = {
@@ -1252,6 +1252,7 @@ class ReviewRequest(BaseModel):
     clientEmail: str
     documentLink: Optional[str] = None
     senderEmail: Optional[str] = None
+    senderName: Optional[str] = None
     projectName: Optional[str] = None
     insights: Optional[list] = None
     notes: Optional[str] = None
@@ -1316,6 +1317,7 @@ async def start_review(request: ReviewRequest):
     doc_link = request.documentLink or project.documentUrl or f"/download_srs/{project.id}_SRS.docx"
     project_title = request.projectName or project.name or "DocuVerse Project"
     sender = request.senderEmail
+    sender_name = request.senderName or "DocuVerse User"
     insights = request.insights or []
     notes = request.notes or ""
 
@@ -1335,6 +1337,8 @@ You have been invited to review the Software Requirements Specification (SRS) fo
 
 Identifying Tag: [TECHNICAL REVIEW STAGE]
 
+Prepared by: {sender_name}{f" <{sender}>" if sender else ""}
+
 Document link: {doc_link}
 {insights_block}
 
@@ -1353,6 +1357,8 @@ Please use the buttons below in the HTML version of this email to Approve or Req
             subject=f"[Action Required] DocuVerse Review{' Update' if request.isUpdate else ''}: {project_title}",
             body=body,
             reply_to=sender,
+            author_name=sender_name,
+            author_email=sender,
             document_link=doc_link,
             project_id=project.id,
             review_token=project.reviewToken,
@@ -1399,6 +1405,7 @@ async def resend_review(request: ReviewRequest):
     doc_link = request.documentLink or project.documentUrl or f"/download_srs/{project.id}_SRS.docx"
     project_title = request.projectName or project.name or "DocuVerse Project"
     sender = request.senderEmail
+    sender_name = request.senderName or "DocuVerse User"
     insights = request.insights or []
     notes = request.notes or ""
 
@@ -1417,6 +1424,8 @@ An updated review has been requested for the Software Requirements Specification
 
 Identifying Tag: [RE-REVIEW STAGE]
 
+Prepared by: {sender_name}{f" <{sender}>" if sender else ""}
+
 Document link: {doc_link}
 {insights_block}
 
@@ -1433,6 +1442,8 @@ Please reply to this email with your review comments or use the Approve/Request 
             subject=f"[Revised] DocuVerse Review Update: {project_title}",
             body=body,
             reply_to=sender,
+            author_name=sender_name,
+            author_email=sender,
             document_link=doc_link,
             project_id=project.id,
             review_token=project.reviewToken,
