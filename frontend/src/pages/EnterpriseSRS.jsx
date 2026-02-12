@@ -94,7 +94,10 @@ const mapBaseProjectToFormData = (project) => {
     };
 };
 
+import useTitle from '../hooks/useTitle';
+
 const EnterpriseSRS = () => {
+    useTitle('System Requirements Study');
     const navigate = useNavigate();
     const location = useLocation();
     const { user, token } = useAuth();
@@ -297,7 +300,7 @@ const EnterpriseSRS = () => {
                     type={type}
                     value={formData[field]}
                     onChange={e => updateField(field, e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg p-4 text-slate-200 focus:border-cyan-500/50 focus:shadow-[0_0_20px_rgba(6,182,212,0.1)] outline-none transition-all placeholder:text-slate-600"
+                    className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg p-4 text-slate-200 focus:border-[#58a6ff]/50 focus:shadow-[0_0_20px_rgba(88,166,255,0.1)] outline-none transition-all placeholder:text-slate-600"
                     placeholder={placeholder}
                 />
             )}
@@ -344,7 +347,7 @@ const EnterpriseSRS = () => {
                                 type="text"
                                 value={formData[otherField] || ''}
                                 onChange={e => updateField(otherField, e.target.value)}
-                                className="w-full bg-black/40 border border-cyan-500/30 rounded-lg p-4 text-slate-200 focus:border-cyan-500 outline-none placeholder:text-slate-600 text-sm"
+                                className="w-full bg-[#161b22] border-[#58a6ff]/30 rounded-lg p-4 text-slate-200 focus:border-[#58a6ff] outline-none placeholder:text-slate-600 text-sm"
                                 placeholder={`Specify custom ${label.toLowerCase()}...`}
                                 autoFocus
                             />
@@ -368,15 +371,16 @@ const EnterpriseSRS = () => {
     const currentStepInfo = steps.find(s => s.id === step);
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-cyan-500/30 overflow-hidden relative flex">
+        <div className="min-h-screen bg-[#0d1117] text-white font-sans selection:bg-[#58a6ff]/30 overflow-hidden relative flex">
 
             {/* --- Background Ambience --- */}
-            <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-violet-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
-            <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-cyan-900/10 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#0d1117] via-[#161b22] to-[#0d1117] animate-gradient pointer-events-none opacity-50" />
+            <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[#58a6ff]/10 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+            <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#238636]/5 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
             {/* --- Progress Rail (Sidebar) --- */}
-            <div className="w-80 border-r border-white/5 bg-black/40 backdrop-blur-md flex flex-col p-8 z-20 relative">
+            <div className="w-80 border-r border-white/5 bg-[#161b22] border-r border-[#30363d] backdrop-blur-md flex flex-col p-8 z-20 relative">
                 <div
                     className="mb-10 cursor-pointer group"
                     onClick={() => navigate('/dashboard')}
@@ -394,12 +398,12 @@ const EnterpriseSRS = () => {
                             onClick={() => setStep(s.id)}
                             className={cn(
                                 "relative z-10 group cursor-pointer flex items-center gap-4 p-3 rounded-lg transition-all duration-300",
-                                step === s.id ? "bg-white/5 border-l-2 border-cyan-500" : "hover:bg-white/5 border-l-2 border-transparent"
+                                step === s.id ? "bg-white/5 border-l-2 border-[#58a6ff]" : "hover:bg-white/5 border-l-2 border-transparent"
                             )}
                         >
                             <div className={cn(
                                 "w-10 h-10 rounded-lg flex items-center justify-center transition-all shadow-lg",
-                                step === s.id ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" :
+                                step === s.id ? "bg-[#58a6ff]/10 text-[#58a6ff] border border-[#58a6ff]/20" :
                                     step > s.id ? "bg-white/5 text-white/40 border border-white/5" : "bg-black/40 text-slate-600 border border-white/5"
                             )}>
                                 {step > s.id ? <CheckCircle size={18} /> : <s.icon size={18} />}
@@ -464,7 +468,7 @@ const EnterpriseSRS = () => {
                         {/* Header */}
                         <div className="mb-8 pl-1">
                             <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
-                                <span className="text-cyan-500 text-lg font-mono">0{step}.</span>
+                                <span className="text-[#58a6ff] text-lg font-mono">0{step}.</span>
                                 {currentStepInfo.label}
                             </h2>
                             <p className="text-slate-400 text-sm max-w-lg">{currentStepInfo.desc} configuration.</p>
@@ -511,7 +515,7 @@ const EnterpriseSRS = () => {
                                                         type="text"
                                                         value={formData.otherUser || ''}
                                                         onChange={e => updateField('otherUser', e.target.value)}
-                                                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg p-4 text-slate-200 focus:border-cyan-500 outline-none placeholder:text-slate-600 text-sm"
+                                                        className="w-full bg-[#161b22] border-[#58a6ff]/30 rounded-lg p-4 text-slate-200 focus:border-[#58a6ff] outline-none placeholder:text-slate-600 text-sm"
                                                         placeholder="Specify other target users (e.g., Supplier, Vendor, Auditor)..."
                                                     />
                                                 </motion.div>
@@ -626,15 +630,10 @@ const EnterpriseSRS = () => {
                                     <div className="mt-12 pt-8 border-t border-white/10">
                                         <button
                                             onClick={handleGenerate}
-                                            className="w-full relative group overflow-hidden rounded-xl bg-cyan-950 p-px"
+                                            className="w-full bg-gradient-to-r from-[#238636] via-[#2eaa44] to-[#238636] animate-gradient text-white p-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg hover:scale-[1.01] shadow-green-900/40 group font-bold tracking-widest uppercase"
                                         >
-                                            <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></span>
-                                            <div className="relative bg-black/80 rounded-xl px-8 py-5 flex items-center justify-center gap-3 border border-white/10 group-hover:bg-black/60 transition-colors">
-                                                <Activity className="text-cyan-400 animate-pulse" />
-                                                <span className="font-bold tracking-widest text-cyan-50 text-lg group-hover:text-white group-hover:shadow-[0_0_20px_rgba(6,182,212,0.6)] transition-all">
-                                                    INITIALIZE GENERATOR
-                                                </span>
-                                            </div>
+                                            <Activity className="text-white animate-pulse" size={20} />
+                                            INITIALIZE GENERATOR
                                         </button>
                                     </div>
                                 </div>

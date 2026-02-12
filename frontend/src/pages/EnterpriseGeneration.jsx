@@ -15,7 +15,10 @@ const getProjectKey = (name) => {
     return safe || "Project";
 };
 
+import useTitle from '../hooks/useTitle';
+
 const EnterpriseGeneration = () => {
+    useTitle('Generating Documentation');
     const location = useLocation();
     const navigate = useNavigate();
     const { user, token } = useAuth();
@@ -106,17 +109,17 @@ const EnterpriseGeneration = () => {
                 })
             });
 
-                const rawText = await response.text();
-                let data = null;
-                try {
-                    data = rawText ? JSON.parse(rawText) : null;
-                } catch {
-                    data = null;
-                }
-                if (!response.ok) {
-                    const errMessage = data?.msg || data?.detail || rawText || "Generation backend failed";
-                    throw new Error(errMessage);
-                }
+            const rawText = await response.text();
+            let data = null;
+            try {
+                data = rawText ? JSON.parse(rawText) : null;
+            } catch {
+                data = null;
+            }
+            if (!response.ok) {
+                const errMessage = data?.msg || data?.detail || rawText || "Generation backend failed";
+                throw new Error(errMessage);
+            }
 
             if (mode === 'quick') {
                 setStudioProjectId(data.projectId);
@@ -178,12 +181,13 @@ const EnterpriseGeneration = () => {
     const strokeDashoffset = circumference - (progress / 100) * circumference;
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col items-center justify-center relative overflow-hidden p-8">
+        <div className="min-h-screen bg-[#0d1117] text-white font-sans flex flex-col items-center justify-center relative overflow-hidden p-8">
 
             {/* Background */}
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#0d1117] via-[#161b22] to-[#0d1117] animate-gradient pointer-events-none opacity-50" />
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-violet-900/10 rounded-full blur-[120px] animate-pulse-slow" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[800px] h-[800px] bg-cyan-900/10 rounded-full blur-[120px]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-[#58a6ff]/5 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[800px] h-[800px] bg-[#238636]/5 rounded-full blur-[120px]" />
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
             </div>
 
@@ -227,13 +231,13 @@ const EnterpriseGeneration = () => {
                             </defs>
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center flex-col z-10">
-                            <span className={`text-3xl font-bold font-mono tracking-widest transition-colors duration-500 ${progress === 100 ? 'text-cyan-400' : 'text-white'}`}>
+                            <span className={`text-3xl font-bold font-mono tracking-widest transition-colors duration-500 ${progress === 100 ? 'text-[#58a6ff]' : 'text-white'}`}>
                                 {Math.round(progress)}%
                             </span>
                         </div>
                     </div>
 
-                    <h2 className="text-xl md:text-2xl font-bold mb-2 text-center tracking-wide text-cyan-400"
+                    <h2 className="text-xl md:text-2xl font-bold mb-2 text-center tracking-wide text-[#58a6ff]"
                         style={{ textShadow: "0 0 10px rgba(6,182,212,0.5)" }}>
                         {status === 'complete' ? (hqStatus === 'processing' ? "Enhancing Document Quality..." : "Generation Completed Successfully.") :
                             status === 'error' ? "Generation Failed." : message}
@@ -247,7 +251,7 @@ const EnterpriseGeneration = () => {
 
                     <div className="flex flex-col items-center gap-2 text-sm font-mono tracking-wider mb-8">
                         <div className="text-slate-400">Target: <span className="text-slate-200">less than 1 minute</span></div>
-                        <div className="font-bold animate-pulse tracking-widest text-base text-cyan-400">Watch: {formatTime(timer)}</div>
+                        <div className="font-bold animate-pulse tracking-widest text-base text-[#58a6ff]">Watch: {formatTime(timer)}</div>
                     </div>
 
                     {/* Linear Progress Bar */}
@@ -272,7 +276,7 @@ const EnterpriseGeneration = () => {
                             {/* Static Download for Quick Version */}
                             <button
                                 onClick={() => handleDownload(result?.download_url)}
-                                className="w-full py-4 bg-gradient-to-r from-cyan-600 to-violet-600 text-white font-bold rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg hover:scale-[1.02] shadow-cyan-500/20 group"
+                                className="w-full py-4 bg-gradient-to-r from-[#238636] via-[#2eaa44] to-[#238636] animate-gradient text-white font-bold rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg hover:scale-[1.02] shadow-green-900/20 group"
                             >
                                 <Download size={20} className="group-hover:animate-bounce" />
                                 Download Final
@@ -282,7 +286,7 @@ const EnterpriseGeneration = () => {
                             {hqStatus === 'idle' && (
                                 <button
                                     onClick={() => startGeneration('full')}
-                                    className="py-3 px-4 bg-violet-600/20 border border-violet-500/30 hover:bg-violet-600/30 text-violet-300 hover:text-white rounded-xl flex items-center justify-center gap-2 transition-all font-medium"
+                                    className="py-3 px-4 bg-[#58a6ff]/10 border-[#58a6ff]/30 hover:bg-[#58a6ff]/20 text-[#79c0ff] rounded-xl flex items-center justify-center gap-2 transition-all font-medium"
                                 >
                                     <Sparkles size={16} /> Generate High Quality
                                 </button>
@@ -316,7 +320,7 @@ const EnterpriseGeneration = () => {
                                 </button>
                                 <button
                                     onClick={() => navigate(`/studio/${studioProjectId || 'demo'}`)}
-                                    className="py-3 border border-cyan-500/30 hover:bg-cyan-900/10 text-cyan-300 rounded-xl flex items-center justify-center gap-2 text-sm"
+                                    className="py-3 border border-cyan-500/30 hover:bg-[#238636]/5 text-cyan-300 rounded-xl flex items-center justify-center gap-2 text-sm"
                                 >
                                     <Code size={14} /> Open in Studio
                                 </button>

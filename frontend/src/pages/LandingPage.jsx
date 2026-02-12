@@ -23,7 +23,10 @@ const LANDING_INSIGHTS = [
     { title: "Architecture Pattern", type: "Pattern", desc: "Detected Microservices pattern. Recommend API Gateway." }
 ];
 
+import useTitle from '../hooks/useTitle';
+
 const LandingPage = () => {
+    useTitle('AI Documentation Ecosystem');
     const navigate = useNavigate();
     const { token } = useAuth();
     const fullText = "Writes Itself.";
