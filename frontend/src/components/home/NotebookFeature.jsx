@@ -89,12 +89,12 @@ const NotebookFeature = () => {
                         viewport={{ once: true }}
                         className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1f2937] border border-[#30363d] text-[#c9d1d9] text-xs font-medium mb-4"
                     >
-                        <Sparkles size={14} className="text-[#a371f7]" />
+                        <Sparkles size={14} className="text-[#58a6ff]" />
                         <span>Gemini-Powered Workspace</span>
                     </motion.div>
                     <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                        Think in <span className="text-[#a371f7]">Notebooks</span>. <br />
-                        Design with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#a371f7] to-[#79c0ff]">Context.</span>
+                        Think in <span className="text-[#58a6ff]">Notebooks</span>. <br />
+                        Design with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#58a6ff] to-[#79c0ff]">Context.</span>
                     </h2>
                     <p className="text-[#8b949e] max-w-2xl text-lg">
                         Paste your rough notes. Our AI organizes them, highlights architectural patterns,
@@ -108,7 +108,7 @@ const NotebookFeature = () => {
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="bg-[#161b22] border border-[#30363d] rounded-2xl p-6 flex flex-col shadow-2xl relative group focus-within:border-[#a371f7] transition-colors"
+                        className="bg-[#161b22] border border-[#30363d] rounded-2xl p-6 flex flex-col shadow-2xl relative group focus-within:border-[#58a6ff] transition-colors"
                     >
                         <div className="flex items-center gap-2 mb-4 text-[#8b949e] text-sm border-b border-[#30363d] pb-4">
                             <FileText size={16} />
@@ -118,12 +118,12 @@ const NotebookFeature = () => {
                         <textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="flex-1 bg-transparent text-[#c9d1d9] font-mono text-sm leading-relaxed outline-none resize-none p-2 selection:bg-[#a371f7] selection:text-white"
+                            className="flex-1 bg-transparent text-[#c9d1d9] font-mono text-sm leading-relaxed outline-none resize-none p-2 selection:bg-[#58a6ff] selection:text-white"
                             spellCheck="false"
                             placeholder="Paste your requirements here..."
                         />
                         {loadingInsights && (
-                            <div className="absolute bottom-6 right-6 text-xs text-[#a371f7] flex items-center gap-2 animate-pulse">
+                            <div className="absolute bottom-6 right-6 text-xs text-[#58a6ff] flex items-center gap-2 animate-pulse">
                                 <Sparkles size={12} /> AI analyzing...
                             </div>
                         )}
@@ -137,7 +137,7 @@ const NotebookFeature = () => {
                             viewport={{ once: true }}
                             className="bg-gradient-to-br from-[#1f2428] to-[#161b22] border border-[#30363d] rounded-2xl flex-1 p-6 relative overflow-hidden"
                         >
-                            <div className="flex items-center gap-2 mb-6 text-[#a371f7] text-sm font-bold uppercase tracking-wider">
+                            <div className="flex items-center gap-2 mb-6 text-[#58a6ff] text-sm font-bold uppercase tracking-wider">
                                 <BrainCircuit size={16} />
                                 <span>System Insights</span>
                             </div>
@@ -155,10 +155,10 @@ const NotebookFeature = () => {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.9 }}
-                                            className="p-4 bg-[#0d1117] border border-[#30363d] rounded-xl hover:border-[#a371f7] transition-colors cursor-pointer group"
+                                            className="p-4 bg-[#0d1117] border border-[#30363d] rounded-xl hover:border-[#58a6ff] transition-colors cursor-pointer group"
                                         >
                                             <div className="flex justify-between items-start mb-2">
-                                                <h4 className="text-white font-medium group-hover:text-[#a371f7] transition-colors">{item.title}</h4>
+                                                <h4 className="text-white font-medium group-hover:text-[#58a6ff] transition-colors">{item.title}</h4>
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full border border-[#30363d] bg-[#161b22] opacity-70`}>
                                                     {item.type}
                                                 </span>
@@ -174,7 +174,7 @@ const NotebookFeature = () => {
                             <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-[#161b22] to-transparent">
                                 <button
                                     onClick={() => setShowChat(true)}
-                                    className="w-full py-3 bg-[#a371f7]/10 border border-[#a371f7]/30 text-[#a371f7] rounded-lg text-sm font-medium hover:bg-[#a371f7]/20 transition flex items-center justify-center gap-2"
+                                    className="w-full py-3 bg-[#58a6ff]/10 border border-[#58a6ff]/30 text-[#58a6ff] rounded-lg text-sm font-medium hover:bg-[#58a6ff]/20 transition flex items-center justify-center gap-2"
                                 >
                                     <MessageSquare size={16} />
                                     Chat with this Context
@@ -194,7 +194,7 @@ const NotebookFeature = () => {
                             >
                                 <div className="p-4 border-b border-[#30363d] flex justify-between items-center bg-[#0d1117] rounded-t-2xl">
                                     <div className="flex items-center gap-2">
-                                        <Bot size={18} className="text-[#a371f7]" />
+                                        <Bot size={18} className="text-[#58a6ff]" />
                                         <span className="font-bold text-white text-sm">ContextChat</span>
                                     </div>
                                     <button onClick={() => setShowChat(false)} className="text-[#8b949e] hover:text-white">
@@ -206,7 +206,7 @@ const NotebookFeature = () => {
                                     {chatMessages.map((msg, i) => (
                                         <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 
-                                                ${msg.role === 'ai' ? 'bg-[#a371f7]/10 text-[#a371f7]' : 'bg-[#79c0ff]/10 text-[#79c0ff]'}`}>
+                                                ${msg.role === 'ai' ? 'bg-[#58a6ff]/10 text-[#58a6ff]' : 'bg-[#79c0ff]/10 text-[#79c0ff]'}`}>
                                                 {msg.role === 'ai' ? <Bot size={14} /> : <User size={14} />}
                                             </div>
                                             <div className={`p-3 rounded-xl max-w-[80%] text-sm ${msg.role === 'ai' ? 'bg-[#21262d] text-[#c9d1d9]' : 'bg-[#1f6feb] text-white'}`}>
@@ -216,7 +216,7 @@ const NotebookFeature = () => {
                                     ))}
                                     {chatLoading && (
                                         <div className="flex gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-[#a371f7]/10 text-[#a371f7] flex items-center justify-center shrink-0"><Bot size={14} /></div>
+                                            <div className="w-8 h-8 rounded-full bg-[#58a6ff]/10 text-[#58a6ff] flex items-center justify-center shrink-0"><Bot size={14} /></div>
                                             <div className="bg-[#21262d] p-3 rounded-xl flex gap-1 items-center">
                                                 <div className="w-1.5 h-1.5 bg-[#8b949e] rounded-full animate-bounce"></div>
                                                 <div className="w-1.5 h-1.5 bg-[#8b949e] rounded-full animate-bounce delay-100"></div>
@@ -230,7 +230,7 @@ const NotebookFeature = () => {
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            className="w-full bg-[#161b22] border border-[#30363d] rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:border-[#a371f7] outline-none"
+                                            className="w-full bg-[#161b22] border border-[#30363d] rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:border-[#58a6ff] outline-none"
                                             placeholder="Ask about your notes..."
                                             value={chatInput}
                                             onChange={(e) => setChatInput(e.target.value)}
@@ -238,7 +238,7 @@ const NotebookFeature = () => {
                                         />
                                         <button
                                             onClick={handleSendMessage}
-                                            className="absolute right-2 top-2 p-1 text-[#a371f7] hover:bg-[#a371f7]/10 rounded"
+                                            className="absolute right-2 top-2 p-1 text-[#58a6ff] hover:bg-[#58a6ff]/10 rounded"
                                         >
                                             <Send size={16} />
                                         </button>

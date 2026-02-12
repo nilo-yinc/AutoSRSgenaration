@@ -7,7 +7,10 @@ import Logo from '../components/ui/Logo';
 import ProfileSettings from './ProfileSettings';
 import axios from 'axios';
 
+import useTitle from '../hooks/useTitle';
+
 const Dashboard = () => {
+    useTitle('Dashboard');
     const navigate = useNavigate();
     const { user, token } = useAuth();
     const [showProfile, setShowProfile] = useState(false);
@@ -58,7 +61,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="h-screen bg-[#0d1117] text-[#c9d1d9] font-sans selection:bg-[#a371f7]/30 flex flex-col overflow-hidden">
+        <div className="h-screen bg-[#0d1117] text-[#c9d1d9] font-sans selection:bg-[#58a6ff]/30 flex flex-col overflow-hidden">
 
             {/* Header */}
             <nav className="h-16 bg-[#161b22]/80 backdrop-blur-md border-b border-[#30363d] z-50 flex items-center justify-between px-6 md:px-12 shrink-0">
@@ -77,7 +80,7 @@ const Dashboard = () => {
 
                             <div
                                 onClick={() => setShowProfile(true)}
-                                className="w-8 h-8 rounded-full bg-[#0d1117] border border-[#30363d] hover:border-[#a371f7] cursor-pointer flex items-center justify-center overflow-hidden transition-all duration-300"
+                                className="w-8 h-8 rounded-full bg-[#0d1117] border border-[#30363d] hover:border-[#58a6ff] cursor-pointer flex items-center justify-center overflow-hidden transition-all duration-300"
                             >
                                 {user?.profilePic ? (
                                     <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
@@ -110,9 +113,9 @@ const Dashboard = () => {
                             </button>
                             <button
                                 onClick={() => navigate('/student/coming-soon')}
-                                className="w-full flex items-center gap-3 p-3 rounded-lg border border-[#30363d] hover:border-[#a371f7]/50 text-[#c9d1d9] text-sm font-medium transition group"
+                                className="w-full flex items-center gap-3 p-3 rounded-lg border border-[#30363d] hover:border-[#58a6ff]/50 text-[#c9d1d9] text-sm font-medium transition group"
                             >
-                                <GraduationCap size={18} className="text-[#8b949e] group-hover:text-[#a371f7]" />
+                                <GraduationCap size={18} className="text-[#8b949e] group-hover:text-[#58a6ff]" />
                                 Student Lab Room
                             </button>
                         </div>
@@ -179,20 +182,20 @@ const Dashboard = () => {
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.05 }}
-                                            className="group bg-[#161b22] border border-[#30363d] rounded-xl hover:border-[#a371f7]/50 transition-all duration-300 relative overflow-hidden"
+                                            className="group bg-[#161b22] border border-[#30363d] rounded-xl hover:border-[#58a6ff]/50 transition-all duration-300 relative overflow-hidden"
                                         >
                                             {/* Status Badge */}
-                                            <div className="absolute top-4 right-4 text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#30363d] bg-[#0d1117] text-[#8b949e] uppercase tracking-wider group-hover:border-[#a371f7]/30 transition-colors">
+                                            <div className="absolute top-4 right-4 text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#30363d] bg-[#0d1117] text-[#8b949e] uppercase tracking-wider group-hover:border-[#58a6ff]/30 transition-colors">
                                                 {project.isPublic ? 'Public' : 'Private'}
                                             </div>
 
                                             <div className="p-6">
                                                 <div className="flex items-center gap-3 mb-4">
-                                                    <div className="w-10 h-10 rounded-lg bg-[#0d1117] border border-[#30363d] flex items-center justify-center group-hover:bg-[#a371f7]/10 transition-colors">
-                                                        <FileText size={20} className="text-[#a371f7]" />
+                                                    <div className="w-10 h-10 rounded-lg bg-[#0d1117] border border-[#30363d] flex items-center justify-center group-hover:bg-[#58a6ff]/10 transition-colors">
+                                                        <FileText size={20} className="text-[#58a6ff]" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-white font-bold group-hover:text-[#a371f7] transition-colors line-clamp-1">{project.title}</h4>
+                                                        <h4 className="text-white font-bold group-hover:text-[#58a6ff] transition-colors line-clamp-1">{project.title}</h4>
                                                         <div className="flex items-center gap-2 text-[10px] text-[#8b949e]">
                                                             <Clock size={10} />
                                                             <span>Last edited {new Date(project.updatedAt).toLocaleString()}</span>
@@ -214,7 +217,7 @@ const Dashboard = () => {
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleOpenStudio(project._id)}
-                                                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-[#21262d] border border-[#30363d] hover:border-[#a371f7] text-white text-xs font-bold rounded-lg transition-all"
+                                                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-[#21262d] border border-[#30363d] hover:border-[#58a6ff] text-white text-xs font-bold rounded-lg transition-all"
                                                     >
                                                         <ExternalLink size={14} />
                                                         Open Studio
@@ -241,7 +244,7 @@ const Dashboard = () => {
                                             </div>
 
                                             {/* Hover Glow */}
-                                            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-[#a371f7] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-[#58a6ff] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>

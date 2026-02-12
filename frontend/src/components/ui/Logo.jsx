@@ -27,9 +27,9 @@ const Logo = ({ className, showText = true, size = "md", subText }) => {
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 to-violet-900/20 opacity-100 group-hover:opacity-100 transition-opacity"></div>
 
                 {/* Terminal Prompt Icon */}
-                <div className="font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-200 relative z-10 flex tracking-tighter" style={{ fontSize: s.icon }}>
-                    <span className="text-cyan-400 mr-[1px]">&gt;</span>
-                    <span className="text-white animate-pulse">_</span>
+                <div className="font-mono font-bold relative z-10 flex tracking-tighter" style={{ fontSize: s.icon }}>
+                    <span className="text-[#22d3ee] mr-[1px]">&gt;</span>
+                    <span className="text-white animate-pulse drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">_</span>
                 </div>
             </div>
 

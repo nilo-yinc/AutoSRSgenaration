@@ -4,16 +4,53 @@ import api from '../api/client';
 const AuthContext = createContext();
 const STORAGE_KEY = 'token';
 
+// Cookie Helper Functions
+const setCookie = (name, value, days) => {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    const secure = window.location.protocol === 'https:' ? "; Secure" : "";
+    document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax" + secure;
+};
+
+const getCookie = (name) => {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+};
+
+const deleteCookie = (name) => {
+    document.cookie = name + '=; Max-Age=-99999999; path=/;';
+};
+
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(() => {
+        // 1. Check Cookie (Primary for 24h persistence)
+        const cookieToken = getCookie(STORAGE_KEY);
+        if (cookieToken) return cookieToken;
+
+        // 2. Fallback to sessionStorage (Legacy session-based)
         const sessionToken = sessionStorage.getItem(STORAGE_KEY);
-        if (sessionToken) return sessionToken;
+        if (sessionToken) {
+            setCookie(STORAGE_KEY, sessionToken, 1); // Migrate to cookie
+            return sessionToken;
+        }
+
+        // 3. Fallback to localStorage (Legacy legacy)
         const legacyToken = localStorage.getItem('token');
         if (legacyToken) {
-            sessionStorage.setItem(STORAGE_KEY, legacyToken);
+            setCookie(STORAGE_KEY, legacyToken, 1);
             localStorage.removeItem('token');
             return legacyToken;
         }
@@ -34,6 +71,7 @@ export const AuthProvider = ({ children }) => {
                 } catch (err) {
                     console.log("Error fetching profile:", err);
                     if (err.response?.status === 401) {
+                        deleteCookie(STORAGE_KEY);
                         sessionStorage.removeItem(STORAGE_KEY);
                         setToken(null);
                         setUser(null);
@@ -55,7 +93,7 @@ export const AuthProvider = ({ children }) => {
             if (!res.data?.token || res.data?.status === false || res.data?.success === false) {
                 return { success: false, msg: res.data?.message || "Login failed. Check credentials." };
             }
-            sessionStorage.setItem(STORAGE_KEY, res.data.token);
+            setCookie(STORAGE_KEY, res.data.token, 1); // Persist for 1 day (24h)
             setToken(res.data.token);
             setUser(res.data.user);
             return { success: true };
@@ -79,6 +117,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        deleteCookie(STORAGE_KEY);
         sessionStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem('autoSRS_enterpriseForm'); // Clear saved form data
         setToken(null);
