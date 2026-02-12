@@ -6,6 +6,7 @@ import ReactFlow, { Background, Controls, MiniMap, applyNodeChanges, applyEdgeCh
 import 'reactflow/dist/style.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import useTitle from '../../hooks/useTitle';
 
 // Debounce Utility
 const useDebounce = (value, delay) => {
@@ -21,7 +22,8 @@ const useDebounce = (value, delay) => {
 
 const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUserEmail, initialStatus = "DRAFT", initialFeedback = [], workflowEvents = [], documentUrl, initialInsights = [], initialClientEmail = "", previewMode = false, enterpriseFormData = {} }) => {
     const navigate = useNavigate();
-    const { token } = useAuth();
+    useTitle(previewMode ? null : 'Interactive Studio');
+    const { token, user } = useAuth();
     // --- Notebook State ---
     const [content, setContent] = useState(initialContent || "# System Requirements\n\nStart typing...");
     const debouncedContent = useDebounce(content, 1500);
@@ -509,7 +511,8 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                 projectId,
                 clientEmail,
                 documentLink: documentUrl || undefined,
-                senderEmail: currentUserEmail || undefined,
+                senderEmail: currentUserEmail || user?.email || undefined,
+                senderName: user?.name || undefined,
                 projectName: projectName || undefined,
                 insights,
                 notes: content,
@@ -613,33 +616,33 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                     <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1f2937] border border-[#30363d] text-[#c9d1d9] text-xs font-medium mb-3">
-                                <Sparkles size={14} className="text-[#a371f7]" />
+                                <Sparkles size={14} className="text-[#58a6ff]" />
                                 <span>Unified AI Workspace</span>
                             </motion.div>
                             <h2 className="text-3xl md:text-4xl font-bold text-white">
-                                DocuVerse <span className="text-[#a371f7]">Studio</span>
+                                DocuVerse <span className="text-[#58a6ff]">Studio</span>
                             </h2>
                             <p className="text-[#8b949e] text-sm mt-1">Write notes, chat with context, and visualize architecture in one place.</p>
                         </div>
-                        <button onClick={() => navigate('/studio/demo')} className="px-6 py-2 bg-[#a371f7] text-white rounded-lg font-bold hover:bg-[#8957e5] transition flex items-center gap-2 shadow-lg shadow-purple-900/20">
+                        <button onClick={() => navigate('/studio/demo')} className="px-6 py-2 bg-[#58a6ff] text-white rounded-lg font-bold hover:bg-[#4493f8] transition flex items-center gap-2 shadow-lg shadow-purple-900/20">
                             <Code size={18} /> Open Full Studio
                         </button>
                     </div>
                 )}
 
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[750px]">
-                    <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="lg:col-span-5 bg-[#161b22] border border-[#30363d] rounded-xl flex flex-col shadow-xl overflow-hidden group focus-within:border-[#a371f7]/50 transition-colors">
+                    <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="lg:col-span-5 bg-[#161b22] border border-[#30363d] rounded-xl flex flex-col shadow-xl overflow-hidden group focus-within:border-[#58a6ff]/50 transition-colors">
                         <div className="h-12 border-b border-[#30363d] bg-[#0d1117]/50 flex items-center justify-between px-4">
                             <div className="flex items-center gap-2 text-[#8b949e] text-xs font-mono">
                                 <FileText size={14} />
                                 <span>requirements.md</span>
                             </div>
                             <div className="flex gap-2">
-                                {loadingInsights && <span className="flex items-center gap-1 text-[#a371f7] text-[10px] animate-pulse"><Sparkles size={10} /> Syncing AI...</span>}
+                                {loadingInsights && <span className="flex items-center gap-1 text-[#58a6ff] text-[10px] animate-pulse"><Sparkles size={10} /> Syncing AI...</span>}
                                 {documentUrl && <a href={documentUrl} className="flex items-center gap-1 text-[#238636] text-xs font-bold hover:underline" target="_blank" rel="noopener noreferrer"><Download size={12} /> View Report</a>}
                             </div>
                         </div>
-                        <textarea value={content} onChange={(e) => setContent(e.target.value)} className="flex-1 bg-transparent text-[#c9d1d9] font-mono text-sm leading-relaxed outline-none resize-none p-6 selection:bg-[#a371f7] selection:text-white" spellCheck="false" placeholder="Start typing your system requirements..." />
+                        <textarea value={content} onChange={(e) => setContent(e.target.value)} className="flex-1 bg-transparent text-[#c9d1d9] font-mono text-sm leading-relaxed outline-none resize-none p-6 selection:bg-[#58a6ff] selection:text-white" spellCheck="false" placeholder="Start typing your system requirements..." />
                     </motion.div>
 
                     <div className="lg:col-span-7 flex flex-col gap-4">
@@ -660,14 +663,14 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                         <motion.div layout className="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl relative overflow-hidden shadow-xl">
                             {activeTab === 'insights' && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-[#30363d]">
-                                    <h3 className="text-[#a371f7] text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><Sparkles size={14} /> Real-time Analysis</h3>
+                                    <h3 className="text-[#58a6ff] text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><Sparkles size={14} /> Real-time Analysis</h3>
                                     <div className="space-y-3">
                                         <AnimatePresence>
                                             {insights.length === 0 && !loadingInsights && <div className="text-center mt-20 text-[#8b949e]"><BrainCircuit size={48} className="mx-auto mb-4 opacity-20" /><p>Type in the editor to generate insights.</p></div>}
                                             {insights.map((item, index) => (
-                                                <motion.div key={index} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-[#0d1117] border border-[#30363d] rounded-xl hover:border-[#a371f7]/50 transition-colors group">
+                                                <motion.div key={index} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-[#0d1117] border border-[#30363d] rounded-xl hover:border-[#58a6ff]/50 transition-colors group">
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <h4 className="text-white font-medium text-sm group-hover:text-[#a371f7] transition-colors">{item.title}</h4>
+                                                        <h4 className="text-white font-medium text-sm group-hover:text-[#58a6ff] transition-colors">{item.title}</h4>
                                                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#30363d] bg-[#161b22] text-[#8b949e]">{item.type}</span>
                                                     </div>
                                                     <p className="text-xs text-[#8b949e] leading-relaxed">{item.desc}</p>
@@ -681,13 +684,13 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                             {activeTab === 'workflow' && (
                                 <div className="h-full p-6 flex flex-col">
                                     <div className="mb-6">
-                                        <h3 className="text-[#a371f7] text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><Zap size={14} /> Automated Review Loop</h3>
-                                        <p className="text-sm text-[#8b949e] mb-4">Trigger an n8n workflow to send this document for client review.</p>
+                                        <h3 className="text-[#58a6ff] text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><Zap size={14} /> Automated Review Loop</h3>
+                                        <p className="text-sm text-[#8b949e] mb-4">Send this document for client review using the internal workflow service.</p>
                                         {documentUrl && <div className="mb-4 bg-[#0d1117] border border-[#30363d] rounded-lg p-3 text-xs text-[#8b949e] flex items-center justify-between"><span>Attached DOCX: {documentUrl}</span><a href={documentUrl} target="_blank" rel="noreferrer" className="text-[#79c0ff] hover:underline">Open</a></div>}
                                         <div className="flex gap-2">
                                             <div className="relative flex-1">
                                                 <Mail className="absolute left-3 top-2.5 text-[#8b949e]" size={16} />
-                                                <input type="email" placeholder="client@example.com" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-[#a371f7] outline-none" />
+                                                <input type="email" placeholder="client@example.com" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-[#58a6ff] outline-none" />
                                             </div>
                                             <button onClick={handleSendReview} disabled={workflowLoading} className="px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition bg-[#238636] text-white hover:bg-[#2ea043] shadow-lg shadow-green-900/20 disabled:bg-[#161b22] disabled:border-[#30363d] disabled:text-[#8b949e] disabled:cursor-not-allowed">
                                                 {workflowLoading ? <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></div> : <Send size={16} />}Send Review
@@ -716,7 +719,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                                             </div>
                                             {workflowTimeline.map((event, idx) => (
                                                 <motion.div key={`${event.title}-${idx}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="relative">
-                                                    <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full border border-[#0d1117] ${event.status === 'APPROVED' ? 'bg-[#238636]' : event.status === 'CHANGES_REQUESTED' ? 'bg-[#ff7b72]' : 'bg-[#a371f7]'}`}></div>
+                                                    <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full border border-[#0d1117] ${event.status === 'APPROVED' ? 'bg-[#238636]' : event.status === 'CHANGES_REQUESTED' ? 'bg-[#ff7b72]' : 'bg-[#58a6ff]'}`}></div>
                                                     <h4 className="text-sm font-bold text-white">{event.title}</h4>
                                                     <p className="text-xs text-[#8b949e]">{event.description}</p>
                                                 </motion.div>
@@ -728,7 +731,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
 
                             {activeTab === 'feedback' && (
                                 <div className="h-full p-6">
-                                    <h3 className="text-[#a371f7] text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><MessageSquare size={14} /> Client Comments</h3>
+                                    <h3 className="text-[#58a6ff] text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><MessageSquare size={14} /> Client Comments</h3>
                                     {status === 'CHANGES_REQUESTED' && (
                                         <div className="mb-4 flex gap-2">
                                             <button onClick={handleUpdateAndRegenerate} className="px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition bg-[#21262d] border border-[#30363d] text-[#c9d1d9] hover:bg-[#30363d]">Update & Regenerate</button>
@@ -773,7 +776,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                                     <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#30363d]">
                                         {chatMessages.map((msg, i) => (
                                             <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'ai' ? 'bg-[#a371f7]/10 text-[#a371f7]' : 'bg-[#79c0ff]/10 text-[#79c0ff]'}`}>{msg.role === 'ai' ? <Bot size={14} /> : <User size={14} />}</div>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'ai' ? 'bg-[#58a6ff]/10 text-[#58a6ff]' : 'bg-[#79c0ff]/10 text-[#79c0ff]'}`}>{msg.role === 'ai' ? <Bot size={14} /> : <User size={14} />}</div>
                                                 <div className={`p-3 rounded-xl max-w-[85%] text-sm ${msg.role === 'ai' ? 'bg-[#21262d] text-[#c9d1d9]' : 'bg-[#1f6feb] text-white'}`}>
                                                     {msg.type === 'image' ? (
                                                         <div className="space-y-2">
@@ -781,7 +784,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                                                             {msg.imageType === 'diagram' && (
                                                                 <div className="flex gap-2">
                                                                     <button onClick={() => downloadImage(msg.imageUrl, 'studio-diagram.png')} className="px-2 py-1 text-xs rounded border border-[#30363d] text-[#8b949e] hover:text-[#c9d1d9] hover:border-[#c9d1d9] transition">Download Diagram</button>
-                                                                    <button onClick={appendLastDiagramToSrs} className="px-2 py-1 text-xs rounded border border-[#a371f7] text-[#a371f7] hover:bg-[#a371f7]/10 transition">Add to SRS</button>
+                                                                    <button onClick={appendLastDiagramToSrs} className="px-2 py-1 text-xs rounded border border-[#58a6ff] text-[#58a6ff] hover:bg-[#58a6ff]/10 transition">Add to SRS</button>
                                                                 </div>
                                                             )}
                                                             <div className="text-xs text-[#8b949e]">{msg.text}</div>
@@ -792,7 +795,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                                         ))}
                                         {(chatLoading || chatImageLoading) && (
                                             <div className="flex gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-[#a371f7]/10 text-[#a371f7] flex items-center justify-center shrink-0"><Bot size={14} /></div>
+                                                <div className="w-8 h-8 rounded-full bg-[#58a6ff]/10 text-[#58a6ff] flex items-center justify-center shrink-0"><Bot size={14} /></div>
                                                 <div className="bg-[#21262d] p-3 rounded-xl flex gap-1 items-center">
                                                     <div className="w-1.5 h-1.5 bg-[#8b949e] rounded-full animate-bounce"></div>
                                                     <div className="w-1.5 h-1.5 bg-[#8b949e] rounded-full animate-bounce delay-100"></div>
@@ -803,8 +806,8 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                                     </div>
                                     <div className="p-4 border-t border-[#30363d] bg-[#0d1117]">
                                         <div className="relative">
-                                            <input type="text" className="w-full bg-[#161b22] border border-[#30363d] rounded-lg pl-4 pr-10 py-3 text-sm text-white focus:border-[#a371f7] outline-none transition-colors" placeholder={chatMode === 'image' ? "Describe the image to generate..." : "Ask about your notes or type /diagram or /image prompt"} value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} />
-                                            <button onClick={handleSendMessage} className="absolute right-2 top-2.5 p-1.5 text-[#a371f7] hover:bg-[#a371f7]/10 rounded-md transition"><Send size={16} /></button>
+                                            <input type="text" className="w-full bg-[#161b22] border border-[#30363d] rounded-lg pl-4 pr-10 py-3 text-sm text-white focus:border-[#58a6ff] outline-none transition-colors" placeholder={chatMode === 'image' ? "Describe the image to generate..." : "Ask about your notes or type /diagram or /image prompt"} value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} />
+                                            <button onClick={handleSendMessage} className="absolute right-2 top-2.5 p-1.5 text-[#58a6ff] hover:bg-[#58a6ff]/10 rounded-md transition"><Send size={16} /></button>
                                         </div>
                                     </div>
                                 </div>
@@ -815,7 +818,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                                     <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                                         <button onClick={generateDiagram} disabled={loadingDiagram} className="px-3 py-1.5 bg-[#238636] text-white text-xs font-bold rounded shadow-lg hover:bg-[#2ea043] disabled:opacity-50 flex items-center gap-2">{loadingDiagram ? <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin"></div> : <Workflow size={14} />}{loadingDiagram ? 'Generating...' : 'Generate New Diagram'}</button>
                                         <button onClick={handleDownloadDiagramImage} disabled={diagramImageLoading} className="px-3 py-1.5 bg-[#21262d] text-white text-xs font-bold rounded shadow-lg hover:bg-[#30363d] disabled:opacity-50 flex items-center gap-2">{diagramImageLoading ? <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin"></div> : <Download size={14} />}Download Image</button>
-                                        <button onClick={handleAppendDiagramToDoc} disabled={diagramImageLoading} className="px-3 py-1.5 bg-[#a371f7] text-white text-xs font-bold rounded shadow-lg hover:bg-[#8957e5] disabled:opacity-50 flex items-center gap-2">{diagramImageLoading ? <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin"></div> : <Share2 size={14} />}Add to SRS</button>
+                                        <button onClick={handleAppendDiagramToDoc} disabled={diagramImageLoading} className="px-3 py-1.5 bg-[#58a6ff] text-white text-xs font-bold rounded shadow-lg hover:bg-[#4493f8] disabled:opacity-50 flex items-center gap-2">{diagramImageLoading ? <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin"></div> : <Share2 size={14} />}Add to SRS</button>
                                     </div>
                                     {diagramImageError && <div className="absolute top-16 right-4 z-50 text-xs text-[#ff7b72] bg-[#0d1117] border border-[#30363d] rounded px-3 py-2">{diagramImageError}</div>}
                                     {nodes.length === 0 && !loadingDiagram && <div className="absolute inset-0 flex flex-col items-center justify-center text-[#8b949e] z-40 pointer-events-none"><Workflow size={48} className="mb-4 opacity-50" /><p className="text-sm">Click "Generate New Diagram" to visualize your notes.</p></div>}
