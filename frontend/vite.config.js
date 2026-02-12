@@ -1,9 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'path'
+
+// Force a stable project root (fixes Windows path issues during build)
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  root: __dirname,
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      input: {
+        app: resolve(__dirname, 'index.html'),
+      },
+    },
+  },
   server: {
     proxy: {
       // Studio/Project endpoints -> Python backend
@@ -34,7 +47,7 @@ export default defineConfig({
         secure: false,
       },
       '/download_srs': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
