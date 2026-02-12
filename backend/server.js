@@ -90,6 +90,10 @@ app.delete('/api/projects/:id', isLoggedIn, async (req, res) => {
     }
 });
 
+app.get('/health', (req, res) => {
+    res.json({ status: 'UP', service: 'Node API', timestamp: new Date() });
+});
+
 app.get('/', (req, res) => {
     res.send('DocuVerse API Running');
 });
