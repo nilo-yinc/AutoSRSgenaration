@@ -208,6 +208,10 @@ async def create_srs_agent():
 
 
 
+@app.get("/health")
+async def health():
+    return {"status": "UP"}
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse(
