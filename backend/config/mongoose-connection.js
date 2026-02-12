@@ -11,6 +11,15 @@ mongoose.connect(mongoUri)
   .then(() => {
     console.log('✅ MongoDB connected successfully');
     console.log(`📊 Database: ${mongoose.connection.name}`);
+
+    // Ensure GridFS TTL cleanup for old DOCX files (metadata.expireAt)
+    // expireAfterSeconds: 0 means "expire exactly at expireAt"
+    const bucketName = process.env.GRIDFS_BUCKET_NAME || 'docx';
+    const filesCollectionName = `${bucketName}.files`;
+    mongoose.connection.db.collection(filesCollectionName)
+      .createIndex({ 'metadata.expireAt': 1 }, { expireAfterSeconds: 0 })
+      .then(() => console.log(`🧹 GridFS TTL index ensured on ${filesCollectionName}.metadata.expireAt`))
+      .catch((err) => console.error('⚠️ Failed to ensure GridFS TTL index:', err?.message || err));
   })
   .catch(err => {
     console.error('❌ MongoDB connection error:', err);

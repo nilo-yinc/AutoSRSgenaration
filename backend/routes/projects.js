@@ -4,7 +4,7 @@ const isLoggedIn = require('../middlewares/isLoggedIn.middleware');
 const Project = require('../models/Project');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const n8nWebhookService = require('../services/n8n-webhook.service');
+const { deleteDocxById, markDocxExpireAt, uploadDocxBuffer } = require('../utils/docxGridfs');
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -133,9 +133,6 @@ router.post('/save', isLoggedIn, async (req, res) => {
 
         await project.save();
         
-        // Send webhook notification to n8n
-        await n8nWebhookService.notifyProjectCreated(project);
-        
         res.json(project);
     } catch (err) {
         console.error(err.message);
@@ -167,9 +164,6 @@ router.post('/generate-prototype', isLoggedIn, async (req, res) => {
         project.prototypeHtml = text;
         project.hasPrototype = true;
         await project.save();
-        
-        // Send webhook notification
-        await n8nWebhookService.notifyPrototypeGenerated(projectId, `/demo/${projectId}`);
 
         res.json({ prototypeHtml: text });
     } catch (err) {
@@ -292,28 +286,50 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
 
         // 4. Call Python Backend (with expanded data)
         // Pass mode=quick by default to match the frontend expectation and performance
-        const pythonResponse = await axios.post(`http://127.0.0.1:8000/generate_srs?mode=${mode}`, srsRequest);
-        const downloadUrl = pythonResponse.data.download_url;
+        const pyBase = String(process.env.PY_API_BASE || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+        const pythonResponse = await axios.post(`${pyBase}/generate_srs?mode=${encodeURIComponent(mode)}`, srsRequest);
+        const pythonDownloadUrl = pythonResponse.data.download_url;
+        const filename = String(pythonDownloadUrl || '').split('/download_srs/')[1] || '';
+        if (!filename) {
+            return res.status(500).json({ msg: 'Generation Engine Failed', details: 'Python did not return a valid download_url' });
+        }
+
+        // 4a. Download DOCX bytes from Python and store ONLY the latest in MongoDB GridFS
+        const pythonDocUrl = pythonDownloadUrl.startsWith('http')
+            ? pythonDownloadUrl
+            : `${pyBase}${pythonDownloadUrl.startsWith('/') ? '' : '/'}${pythonDownloadUrl}`;
+        const docxResp = await axios.get(pythonDocUrl, { responseType: 'arraybuffer' });
+        const docxBuffer = Buffer.from(docxResp.data);
+
+        // keep old doc alive for 24 hours (so old email links still work),
+        // then MongoDB TTL will remove it automatically
+        if (project.docxFileId) {
+            const expireAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            await markDocxExpireAt(project.docxFileId, expireAt);
+        }
+
+        const uploadedId = await uploadDocxBuffer({
+            filename,
+            buffer: docxBuffer,
+            metadata: { projectId: project._id.toString(), type: 'srs-docx' }
+        });
 
         // 4b. Save document URL + initial requirements markdown to project
-        if (project.documentUrl && project.documentUrl !== downloadUrl) {
-            project.reviewedDocumentUrl = project.documentUrl;
-        }
-        project.documentUrl = downloadUrl;
+        project.docxFileId = uploadedId;
+        project.docxFilename = filename;
+        // Node serves docx from GridFS at the same path prefix used previously by Python.
+        // In production (Vercel frontend + Render backend), store an absolute URL so "Open" works cross-domain.
+        const nodePublicUrl = String(process.env.NODE_PUBLIC_URL || process.env.BACKEND_PUBLIC_URL || '').replace(/\/+$/, '');
+        project.documentUrl = nodePublicUrl ? `${nodePublicUrl}/download_srs/${filename}` : `/download_srs/${filename}`;
+        // keep only latest docx => don't point to a deleted previous file
+        project.reviewedDocumentUrl = undefined;
         project.contentMarkdown = buildMarkdownFromSrsRequest(srsRequest);
         await project.save();
-        
-        // 5. Send webhook notification
-        await n8nWebhookService.notifySRSGenerated({
-            ...project.toObject(),
-            srsDocumentPath: downloadUrl,
-            downloadUrl: downloadUrl
-        });
         
         // 6. Return Download URL and Project ID
         // The Python backend returns a relative download_url like /download_srs/Filename.docx
         res.json({ 
-            srs_document_path: downloadUrl,
+            srs_document_path: project.documentUrl,
             projectId: project._id 
         });
 
@@ -400,6 +416,9 @@ router.delete('/:id', isLoggedIn, async (req, res) => {
         if (!project) return res.status(404).json({ msg: 'Project not found' });
         if (project.userId.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
 
+        if (project.docxFileId) {
+            await deleteDocxById(project.docxFileId);
+        }
         await project.deleteOne();
         res.json({ success: true });
     } catch (err) {

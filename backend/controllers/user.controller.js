@@ -126,7 +126,7 @@ const login = async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
-      domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined
+      domain: process.env.COOKIE_DOMAIN || undefined
     };
 
     res.cookie("jwtToken", jwtToken, cookieOptions);

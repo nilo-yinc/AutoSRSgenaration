@@ -64,6 +64,15 @@ const ProjectSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    // Latest generated DOCX stored in MongoDB GridFS (only latest kept)
+    docxFileId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: false
+    },
+    docxFilename: {
+        type: String,
+        required: false
+    },
     reviewedDocumentUrl: {
         type: String,
         required: false
