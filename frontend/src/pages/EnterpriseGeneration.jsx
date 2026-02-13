@@ -117,7 +117,10 @@ const EnterpriseGeneration = () => {
                 data = null;
             }
             if (!response.ok) {
-                const errMessage = data?.msg || data?.detail || rawText || "Generation backend failed";
+                const detailText = typeof data?.details === 'string'
+                    ? data.details
+                    : (data?.details ? JSON.stringify(data.details) : '');
+                const errMessage = detailText || data?.detail || data?.msg || rawText || "Generation backend failed";
                 throw new Error(errMessage);
             }
 

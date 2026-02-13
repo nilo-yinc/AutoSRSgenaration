@@ -34,6 +34,24 @@ const normalizeUserScale = (rawScale, otherScale) => {
     return '100-1k';
 };
 
+const normalizePerformance = (rawValue, otherValue) => {
+    const candidates = [rawValue, otherValue].filter(Boolean).map(v => String(v).trim().toLowerCase());
+    for (const value of candidates) {
+        if (value.includes('real-time') || value.includes('realtime') || value.includes('latency')) return 'Real-time';
+        if (value.includes('high')) return 'High';
+        if (value.includes('standard') || value.includes('normal') || value.includes('moderate')) return 'Normal';
+    }
+    return 'Normal';
+};
+
+const normalizeDetailLevel = (rawValue) => {
+    const value = String(rawValue || '').toLowerCase();
+    if (value.includes('enterprise')) return 'Enterprise-grade';
+    if (value.includes('technical') || value.includes('standard')) return 'Technical';
+    if (value.includes('brief') || value.includes('high-level') || value.includes('high level')) return 'High-level';
+    return 'Technical';
+};
+
 const buildMarkdownFromSrsRequest = (srsRequest) => {
     if (!srsRequest) return "# System Requirements\n\nStart typing...";
     const pi = srsRequest.project_identity || {};
@@ -226,10 +244,10 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
                     safeUserScale,
                     safeUserScale === 'Other' ? formData.userScale_other : ''
                 ),
-                performance_expectation: (safePerformance === 'Other' && formData.performance_other) ? formData.performance_other :
-                                       safePerformance.includes('Standard') ? 'Normal' :
-                                       safePerformance.includes('High') ? 'High' : 
-                                       safePerformance === 'Real-time (ms latency)' ? 'Real-time' : safePerformance
+                performance_expectation: normalizePerformance(
+                    safePerformance,
+                    safePerformance === 'Other' ? formData.performance_other : ''
+                )
             },
             security_and_compliance: {
                 authentication_required: formData.authRequired === 'Yes',
@@ -243,8 +261,7 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
             },
             output_control: {
                 // Map frontend "Standard", "Professional", "Brief" to backend valid levels
-                srs_detail_level: safeDetailLevel.includes('Professional') ? 'Enterprise-grade' :
-                                safeDetailLevel.includes('Standard') ? 'Technical' : 'High-level',
+                srs_detail_level: normalizeDetailLevel(safeDetailLevel),
                 additional_instructions: formData.additionalInstructions || ''
             }
         };
