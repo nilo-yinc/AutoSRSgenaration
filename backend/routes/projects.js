@@ -324,9 +324,31 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
         srsRequest.project_identity.project_id = project._id.toString();
 
         // 4. Call Python Backend (with expanded data)
-        // Pass mode=quick by default to match the frontend expectation and performance
+        // In production free-tier environments, full mode can fail due cold-start/limits.
+        // Fallback: if full fails, retry quick mode automatically.
         const pyBase = String(process.env.PY_API_BASE || 'http://127.0.0.1:8000').replace(/\/+$/, '');
-        const pythonResponse = await axios.post(`${pyBase}/generate_srs?mode=${encodeURIComponent(mode)}`, srsRequest);
+        let pythonResponse;
+        let usedMode = mode;
+        let modeFallbackWarning = null;
+        try {
+            pythonResponse = await axios.post(
+                `${pyBase}/generate_srs?mode=${encodeURIComponent(mode)}`,
+                srsRequest,
+                { timeout: 120000 }
+            );
+        } catch (firstErr) {
+            if (mode === 'full') {
+                modeFallbackWarning = 'Full mode failed; quick mode fallback used.';
+                usedMode = 'quick';
+                pythonResponse = await axios.post(
+                    `${pyBase}/generate_srs?mode=quick`,
+                    srsRequest,
+                    { timeout: 120000 }
+                );
+            } else {
+                throw firstErr;
+            }
+        }
         const pythonDownloadUrl = pythonResponse.data.download_url;
         const filename = String(pythonDownloadUrl || '').split('/download_srs/')[1] || '';
         if (!filename) {
@@ -369,7 +391,9 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
         // The Python backend returns a relative download_url like /download_srs/Filename.docx
         res.json({ 
             srs_document_path: project.documentUrl,
-            projectId: project._id 
+            projectId: project._id,
+            mode: usedMode,
+            warning: modeFallbackWarning
         });
 
     } catch (err) {
