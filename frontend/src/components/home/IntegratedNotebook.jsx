@@ -42,6 +42,8 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
     const [workflowTimeline, setWorkflowTimeline] = useState(workflowEvents || []);
     const [hq, setHq] = useState(initialHq || { status: 'IDLE' });
     const [activeDocumentUrl, setActiveDocumentUrl] = useState(documentUrl || "");
+    const [hqToast, setHqToast] = useState({ visible: false, message: "" });
+    const prevHqStatusRef = useRef((initialHq && initialHq.status) || 'IDLE');
 
     // --- Chat State ---
     const [chatMessages, setChatMessages] = useState([
@@ -214,6 +216,23 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
     useEffect(() => {
         setHq(initialHq || { status: 'IDLE' });
     }, [initialHq]);
+
+    useEffect(() => {
+        const previous = prevHqStatusRef.current;
+        const current = hq?.status || 'IDLE';
+        if (previous !== 'APPLIED' && current === 'APPLIED') {
+            setHqToast({
+                visible: true,
+                message: 'HQ ready. Enhanced DOCX is now applied to this project.'
+            });
+            const timeout = setTimeout(() => {
+                setHqToast({ visible: false, message: "" });
+            }, 5000);
+            prevHqStatusRef.current = current;
+            return () => clearTimeout(timeout);
+        }
+        prevHqStatusRef.current = current;
+    }, [hq?.status]);
 
     useEffect(() => {
         setActiveDocumentUrl(documentUrl || "");
@@ -571,6 +590,21 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
 
     return (
         <section className="py-12 bg-transparent relative overflow-hidden min-h-screen flex flex-col z-10">
+            <AnimatePresence>
+                {hqToast.visible && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        className="fixed top-20 right-6 z-[120] max-w-sm rounded-lg border border-[#238636]/40 bg-[#0d1117] px-4 py-3 shadow-xl"
+                    >
+                        <div className="flex items-start gap-2">
+                            <CheckCircle size={16} className="text-[#3fb950] mt-0.5 shrink-0" />
+                            <div className="text-sm text-[#c9d1d9]">{hqToast.message}</div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <div className="absolute top-0 right-0 p-64 bg-[#79c0ff]/5 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 p-40 bg-[#d29922]/5 blur-[120px] rounded-full pointer-events-none"></div>
 
