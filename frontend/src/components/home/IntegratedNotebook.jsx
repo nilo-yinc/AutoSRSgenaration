@@ -458,7 +458,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                 }
             }
         } catch (error) {
-            if (error?.response?.status === 404) return;
+            if ([404, 502, 503, 504].includes(error?.response?.status)) return;
             console.error("Failed to refresh project from Python:", error);
         }
     };

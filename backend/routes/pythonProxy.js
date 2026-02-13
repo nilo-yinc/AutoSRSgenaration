@@ -4,11 +4,32 @@ const axios = require('axios');
 const router = express.Router();
 
 const getPyBase = () => String(process.env.PY_API_BASE || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const requestPython = async (requestFactory) => {
+    let lastError;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            return await requestFactory();
+        } catch (err) {
+            lastError = err;
+            const networkError = !err.response;
+            if (!networkError || attempt === 2) break;
+            try {
+                const pyBase = getPyBase();
+                await axios.get(`${pyBase}/health`, { timeout: 65000 });
+            } catch (_) {
+            }
+            await sleep(1500);
+        }
+    }
+    throw lastError;
+};
 
 const forward = (method, path) => async (req, res) => {
     try {
         const pyBase = getPyBase();
-        const response = await axios({
+        const response = await requestPython(() => axios({
             method,
             url: `${pyBase}${path}`,
             data: req.body,
@@ -16,13 +37,14 @@ const forward = (method, path) => async (req, res) => {
             headers: {
                 'Content-Type': 'application/json'
             },
+            timeout: 70000,
             validateStatus: () => true
-        });
+        }));
 
         return res.status(response.status).json(response.data);
     } catch (err) {
         console.error(`Python proxy error [${method.toUpperCase()} ${path}]:`, err?.message || err);
-        return res.status(500).json({
+        return res.status(502).json({
             detail: 'Python proxy request failed',
             error: err?.message || 'Unknown error'
         });
@@ -32,7 +54,7 @@ const forward = (method, path) => async (req, res) => {
 const forwardHtml = (method, path) => async (req, res) => {
     try {
         const pyBase = getPyBase();
-        const response = await axios({
+        const response = await requestPython(() => axios({
             method,
             url: `${pyBase}${path}`,
             data: req.body,
@@ -41,14 +63,15 @@ const forwardHtml = (method, path) => async (req, res) => {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             responseType: 'text',
+            timeout: 70000,
             validateStatus: () => true
-        });
+        }));
         const contentType = response.headers?.['content-type'] || 'text/html; charset=utf-8';
         res.setHeader('Content-Type', contentType);
         return res.status(response.status).send(response.data);
     } catch (err) {
         console.error(`Python HTML proxy error [${method.toUpperCase()} ${path}]:`, err?.message || err);
-        return res.status(500).send('Workflow review proxy failed');
+        return res.status(502).send('Workflow review proxy failed');
     }
 };
 
@@ -70,20 +93,21 @@ router.post('/workflow/review-feedback', async (req, res) => {
         Object.entries(req.body || {}).forEach(([key, value]) => {
             if (value !== undefined && value !== null) payload.append(key, String(value));
         });
-        const response = await axios({
+        const response = await requestPython(() => axios({
             method: 'post',
             url: `${pyBase}/api/workflow/review-feedback`,
             data: payload.toString(),
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             responseType: 'text',
+            timeout: 70000,
             validateStatus: () => true
-        });
+        }));
         const contentType = response.headers?.['content-type'] || 'text/html; charset=utf-8';
         res.setHeader('Content-Type', contentType);
         return res.status(response.status).send(response.data);
     } catch (err) {
         console.error('Python proxy error [POST /workflow/review-feedback]:', err?.message || err);
-        return res.status(500).send('Workflow feedback proxy failed');
+        return res.status(502).send('Workflow feedback proxy failed');
     }
 });
 
