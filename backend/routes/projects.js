@@ -175,16 +175,23 @@ const sendReviewEmailDirectFromNode = async ({
         throw new Error('Node SMTP config missing (EMAIL_USER/EMAIL_PASS/SENDER_EMAIL).');
     }
 
+    // Pre-resolve smtp.gmail.com to IPv4 — Render blocks IPv6
+    let smtpHost;
+    try {
+        const addrs = await new Promise((resolve, reject) =>
+            require('dns').resolve4('smtp.gmail.com', (err, a) => err ? reject(err) : resolve(a))
+        );
+        smtpHost = addrs[0];
+    } catch (_) {
+        smtpHost = '142.250.115.109'; // Gmail SMTP IPv4 fallback
+    }
+
     const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
+        host: smtpHost,          // Raw IPv4 IP — no DNS
         port: 465,
-        secure: true,          // direct SSL on port 465
+        secure: true,
         auth: { user, pass },
-        tls: { rejectUnauthorized: false },
-        dnsLookup: (hostname, options, callback) => {
-            if (typeof options === 'function') { callback = options; options = {}; }
-            return require('dns').lookup(hostname, { ...options, family: 4 }, callback);
-        },
+        tls: { rejectUnauthorized: false, servername: 'smtp.gmail.com' },
         connectionTimeout: 15000,
         greetingTimeout: 15000,
         socketTimeout: 30000,

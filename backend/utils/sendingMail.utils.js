@@ -1,30 +1,40 @@
 // email sending using nodemailer
 const dns = require("dns");
+const { promisify } = require("util");
 const nodemailer = require("nodemailer");
 
-// Custom DNS lookup that forces IPv4 — Render blocks IPv6 to Gmail
-const ipv4Lookup = (hostname, options, callback) => {
-  if (typeof options === "function") {
-    callback = options;
-    options = {};
+const resolve4 = promisify(dns.resolve4);
+
+// Resolve smtp.gmail.com to IPv4 once and cache it
+let _cachedGmailIPv4 = null;
+const getGmailIPv4 = async () => {
+  if (_cachedGmailIPv4) return _cachedGmailIPv4;
+  try {
+    const addresses = await resolve4("smtp.gmail.com");
+    _cachedGmailIPv4 = addresses[0];
+    console.log("Resolved smtp.gmail.com to IPv4:", _cachedGmailIPv4);
+    return _cachedGmailIPv4;
+  } catch (err) {
+    console.error("Failed to resolve smtp.gmail.com IPv4, using fallback:", err.message);
+    return "142.250.115.109"; // well-known Gmail SMTP IPv4 fallback
   }
-  options = Object.assign({}, options, { family: 4 });
-  return dns.lookup(hostname, options, callback);
 };
 
-const buildTransporter = () => {
+const buildTransporter = async () => {
+  const ipv4Host = await getGmailIPv4();
+
   return nodemailer.createTransport({
-    host: "smtp.gmail.com",
+    host: ipv4Host,            // Raw IPv4 IP — no DNS lookup needed
     port: 465,
-    secure: true,              // direct SSL on port 465
+    secure: true,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
     tls: {
       rejectUnauthorized: false,
+      servername: "smtp.gmail.com",  // SNI for TLS handshake with IP host
     },
-    dnsLookup: ipv4Lookup,     // force IPv4 DNS resolution
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 30000,
@@ -71,7 +81,7 @@ const sendVerificationEmail = async (email, token) => {
   try {
 
     // create email transporter
-    const transporter = buildTransporter();
+    const transporter = await buildTransporter();
 
     // verification URL
     const verificationUrl = `${process.env.BASE_URL}/api/v1/users/verify/${token}`;
@@ -116,7 +126,7 @@ const sendVerificationEmail = async (email, token) => {
 
 const sendPasswordOTP = async (email, otp) => {
   try {
-    const transporter = buildTransporter();
+    const transporter = await buildTransporter();
     const mailOptions = {
       from: `"DocuVerse Security" <${process.env.SENDER_EMAIL}>`,
       to: email,
@@ -148,7 +158,7 @@ const sendPasswordOTP = async (email, otp) => {
 
 const sendSuggestionAcknowledgement = async ({ email, name, title, priority }) => {
   try {
-    const transporter = buildTransporter();
+    const transporter = await buildTransporter();
     const safeName = name || "there";
     const safeTitle = title || "your idea";
     const safePriority = priority || "Medium";
