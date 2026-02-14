@@ -73,6 +73,19 @@ const Dashboard = () => {
         }
     };
 
+    const formatTechStack = (techStack) => {
+        if (!techStack) return 'Default';
+        if (typeof techStack === 'string') return techStack;
+        if (Array.isArray(techStack)) return techStack.join(', ') || 'Default';
+        if (typeof techStack === 'object') {
+            const backend = String(techStack.backend || '').trim();
+            const database = String(techStack.database || '').trim();
+            const parts = [backend, database].filter(Boolean);
+            return parts.length ? parts.join(' / ') : 'Default';
+        }
+        return 'Default';
+    };
+
     return (
         <div className="h-screen bg-[#0d1117] text-[#c9d1d9] font-sans selection:bg-[#58a6ff]/30 flex flex-col overflow-hidden">
 
@@ -223,7 +236,7 @@ const Dashboard = () => {
                                                     </div>
                                                     <div className="bg-[#0d1117] rounded-lg p-2 border border-[#30363d]">
                                                         <div className="text-[9px] text-[#8b949e] uppercase font-bold mb-1">Tech Stack</div>
-                                                        <div className="text-xs text-white truncate">{project.techStack || 'Default'}</div>
+                                                        <div className="text-xs text-white truncate">{formatTechStack(project.techStack)}</div>
                                                     </div>
                                                 </div>
 
