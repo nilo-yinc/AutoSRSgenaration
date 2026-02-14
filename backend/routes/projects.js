@@ -561,17 +561,29 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
 
         const pyBase = getPyBase();
 
-        await callPythonWithRetry(() => axios.post(`${pyBase}/api/project/create`, {
-            id: project._id.toString(),
-            name: project.title || projectName || 'DocuVerse Project',
-            content: project.contentMarkdown || buildMarkdownFromSrsRequest(project.enterpriseData || {}),
-            documentUrl: project.documentUrl || documentLink || undefined,
-            status: project.status || 'DRAFT',
-            reviewedDocumentUrl: project.reviewedDocumentUrl,
-            clientEmail: clientEmail,
-            workflowEvents: project.workflowEvents || [],
-            reviewFeedback: project.reviewFeedback || []
-        }, { timeout: 120000 }), 2);
+        // Warm up Python backend first (important on Render free-tier cold start)
+        try {
+            await axios.get(`${pyBase}/health`, { timeout: 65000 });
+        } catch (_) {}
+
+        // Best-effort sync to Python project store; continue even if this step fails.
+        let syncWarning = null;
+        try {
+            await callPythonWithRetry(() => axios.post(`${pyBase}/api/project/create`, {
+                id: project._id.toString(),
+                name: project.title || projectName || 'DocuVerse Project',
+                content: project.contentMarkdown || buildMarkdownFromSrsRequest(project.enterpriseData || {}),
+                documentUrl: project.documentUrl || documentLink || undefined,
+                status: project.status || 'DRAFT',
+                reviewedDocumentUrl: project.reviewedDocumentUrl,
+                clientEmail: clientEmail,
+                workflowEvents: project.workflowEvents || [],
+                reviewFeedback: project.reviewFeedback || []
+            }, { timeout: 120000 }), 3);
+        } catch (syncErr) {
+            syncWarning = syncErr?.response?.data?.detail || syncErr?.message || 'Project sync warning';
+            console.warn('Project sync failed, proceeding with review send:', syncWarning);
+        }
 
         const endpoint = isResend ? '/api/workflow/resend-review' : '/api/workflow/start-review';
         const wfRes = await callPythonWithRetry(() => axios.post(`${pyBase}${endpoint}`, {
@@ -584,7 +596,7 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
             insights: insights || [],
             notes: notes || project.contentMarkdown || '',
             isUpdate
-        }, { timeout: 180000 }), 2);
+        }, { timeout: 180000 }), 3);
 
         project.clientEmail = clientEmail;
         project.status = 'IN_REVIEW';
@@ -600,7 +612,7 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
         res.json({
             status: 'IN_REVIEW',
             message: isResend ? 'Review resent successfully.' : 'Review sent successfully.',
-            warning: wfRes.data?.warning || null
+            warning: wfRes.data?.warning || syncWarning || null
         });
     } catch (err) {
         console.error('Send review failed:', err?.response?.data || err?.message || err);

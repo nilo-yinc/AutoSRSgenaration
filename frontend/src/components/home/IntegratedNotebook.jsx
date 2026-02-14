@@ -498,7 +498,8 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                 isUpdate: hasUpdatedDoc,
                 isResend: wasInReview
             }, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                timeout: 120000
             });
 
             const eventTitle = wasInReview ? "Review Resent" : "Review Sent";
@@ -529,7 +530,11 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
             }
         } catch (error) {
             console.error("Failed to send review", error);
-            const errMsg = error.response?.data?.detail || error.response?.data?.msg || "Failed to send review. Check backend logs and SMTP settings.";
+            const status = error?.response?.status;
+            const errMsg = error.response?.data?.detail || error.response?.data?.msg ||
+                (status === 502
+                    ? "Python service is waking up or unreachable. Wait 30-60s and retry."
+                    : "Failed to send review. Check backend logs and SMTP settings.");
             setWorkflowError(errMsg);
         } finally {
             setWorkflowLoading(false);

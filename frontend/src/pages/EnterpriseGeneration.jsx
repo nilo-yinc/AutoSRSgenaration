@@ -53,6 +53,7 @@ const EnterpriseGeneration = () => {
     const [hqResult, setHqResult] = useState(null);
 
     const timerRef = useRef(null);
+    const progressTimerRef = useRef(null);
     const hasStartedRef = useRef(false);
 
     const formatTime = (seconds) => {
@@ -74,7 +75,8 @@ const EnterpriseGeneration = () => {
         try {
             if (mode === 'quick') {
                 setStatus('processing');
-                setProgress(0);
+                setProgress(8);
+                setMessage("Initializing Generator...");
                 if (!timerRef.current) {
                     timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
                 }
@@ -187,8 +189,48 @@ const EnterpriseGeneration = () => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
             timerRef.current = null;
+            if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+            progressTimerRef.current = null;
         };
     }, []);
+
+    // Smooth staged progress while backend works (prevents UI staying at 0%)
+    useEffect(() => {
+        if (status !== 'processing') {
+            if (progressTimerRef.current) {
+                clearInterval(progressTimerRef.current);
+                progressTimerRef.current = null;
+            }
+            return;
+        }
+
+        if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+        progressTimerRef.current = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 92) return prev;
+                if (prev < 20) return prev + 4;
+                if (prev < 45) return prev + 3;
+                if (prev < 70) return prev + 2;
+                return prev + 1;
+            });
+        }, 1200);
+
+        return () => {
+            if (progressTimerRef.current) {
+                clearInterval(progressTimerRef.current);
+                progressTimerRef.current = null;
+            }
+        };
+    }, [status]);
+
+    useEffect(() => {
+        if (status !== 'processing') return;
+        if (progress < 15) setMessage("Initializing Generator...");
+        else if (progress < 35) setMessage("Analyzing Requirements...");
+        else if (progress < 60) setMessage("Building SRS Sections...");
+        else if (progress < 85) setMessage("Rendering Diagrams...");
+        else setMessage("Finalizing Document...");
+    }, [progress, status]);
 
     const handleDownload = (url) => {
         if (url) window.location.href = url;

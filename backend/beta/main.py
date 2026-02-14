@@ -286,8 +286,9 @@ def _build_image_paths(project_key: str) -> dict:
     }
 
 
+_DEFAULT_TEMPLATE_PROJECT_KEY = os.getenv("SRS_TEMPLATE_PROJECT_KEY", "test_id_123")
 _TEMPLATE_DIAGRAM_PREFIXES = [
-    "test_id_123",
+    _DEFAULT_TEMPLATE_PROJECT_KEY,
     "Untitled_Project",
     "Test_Project",
 ]
@@ -327,19 +328,19 @@ def _find_template_diagram(diagram_key: str) -> Path | None:
 
     suffix = f"_{diagram_key}.png"
 
-    # Prefer known bundled templates
+    # Prefer deterministic template set by project key (branded/stable look)
+    preferred = static_dir / f"{_DEFAULT_TEMPLATE_PROJECT_KEY}{suffix}"
+    if preferred.is_file():
+        return preferred
+
+    # Then try known bundled template prefixes
     for prefix in _TEMPLATE_DIAGRAM_PREFIXES:
         candidate = static_dir / f"{prefix}{suffix}"
         if candidate.is_file():
             return candidate
 
-    # Fallback: any existing diagram with the same key
-    candidates = [p for p in static_dir.glob(f"*{suffix}") if p.is_file()]
-    if not candidates:
-        return None
-    # Most recently generated tends to be high quality in this repo.
-    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return candidates[0]
+    # Final fallback: none (better than unpredictable random diagrams)
+    return None
 
 
 def _ensure_minimum_diagrams(image_paths: dict, mode: str = "quick") -> dict:
@@ -1414,8 +1415,20 @@ async def start_review(request: ReviewRequest):
     print(f"DEBUG: start_review triggered for project: {request.projectId}")
     project = ProjectStore.get_project(request.projectId)
     if not project:
-        print(f"ERROR: Project {request.projectId} not found in store!")
-        raise HTTPException(status_code=404, detail="Project not found in Python backend store")
+        print(f"WARN: Project {request.projectId} not found in store. Creating fallback project entry.")
+        fallback_name = request.projectName or "DocuVerse Project"
+        fallback_content = request.notes or f"# {fallback_name}\n\nAuto-created for review workflow."
+        fallback_doc = request.documentLink or ""
+        fallback_project = Project(
+            id=request.projectId,
+            name=fallback_name,
+            contentMarkdown=fallback_content,
+            documentUrl=fallback_doc
+        )
+        ProjectStore.save_project(fallback_project)
+        project = ProjectStore.get_project(request.projectId)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found in Python backend store")
 
     # Update Status
     ProjectStore.update_status(project.id, "IN_REVIEW")
@@ -1503,8 +1516,20 @@ async def resend_review(request: ReviewRequest):
     print(f"DEBUG: resend_review triggered for project: {request.projectId}")
     project = ProjectStore.get_project(request.projectId)
     if not project:
-        print(f"ERROR: Project {request.projectId} not found in store!")
-        raise HTTPException(status_code=404, detail="Project not found in Python backend store")
+        print(f"WARN: Project {request.projectId} not found in store. Creating fallback project entry.")
+        fallback_name = request.projectName or "DocuVerse Project"
+        fallback_content = request.notes or f"# {fallback_name}\n\nAuto-created for review workflow."
+        fallback_doc = request.documentLink or ""
+        fallback_project = Project(
+            id=request.projectId,
+            name=fallback_name,
+            contentMarkdown=fallback_content,
+            documentUrl=fallback_doc
+        )
+        ProjectStore.save_project(fallback_project)
+        project = ProjectStore.get_project(request.projectId)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found in Python backend store")
 
     ProjectStore.update_status(project.id, "IN_REVIEW")
     project.clientEmail = request.clientEmail
