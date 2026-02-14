@@ -26,6 +26,33 @@ const LANDING_INSIGHTS = [
 
 import useTitle from '../hooks/useTitle';
 
+const Typewriter = ({ text, delay = 100 }) => {
+    const [currentText, setCurrentText] = useState('');
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    useEffect(() => {
+        if (currentIndex < text.length) {
+            const timeout = setTimeout(() => {
+                setCurrentText(prev => prev + text[currentIndex]);
+                setCurrentIndex(prev => prev + 1);
+            }, delay);
+            return () => clearTimeout(timeout);
+        }
+    }, [currentIndex, delay, text]);
+
+    return (
+        <span>
+            {currentText}
+            <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }}
+                className="inline-block w-1 h-8 bg-[#79c0ff] ml-1 translate-y-1"
+            />
+        </span>
+    );
+};
+
 const LandingPage = () => {
     useTitle('AI Documentation Ecosystem');
     const navigate = useNavigate();
@@ -70,24 +97,9 @@ const LandingPage = () => {
                     </div>
                     <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight">
                         Documentation <br />
-                        <motion.span
-                            className="text-[#79c0ff] inline-block"
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ staggerChildren: 0.1, delayChildren: 0.2 }}
-                        >
-                            {fullText.split("").map((char, index) => (
-                                <motion.span
-                                    key={index}
-                                    className="inline-block"
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.3, ease: "easeOut" }}
-                                >
-                                    {char === " " ? "\u00A0" : char}
-                                </motion.span>
-                            ))}
-                        </motion.span>
+                        <span className="text-[#79c0ff] inline-flex items-center">
+                            <Typewriter text={fullText} delay={100} />
+                        </span>
                     </h1>
                     <p className="text-lg text-[#8b949e] max-w-lg leading-relaxed">
                         Architect your vision with precision. Generate engineering-grade IEEE documentation and actionable system insights with AI-driven intelligence.
