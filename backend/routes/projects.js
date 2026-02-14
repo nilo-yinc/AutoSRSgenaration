@@ -167,22 +167,16 @@ const sendReviewEmailDirectFromNode = async ({
     documentLink,
     projectName
 }) => {
-    const host = String(process.env.EMAIL_HOST || '').trim();
-    const port = Number(process.env.EMAIL_PORT || 587);
-    const secure = String(process.env.EMAIL_SECURE || 'false').toLowerCase() === 'true';
     const user = String(process.env.EMAIL_USER || '').trim();
     const pass = String(process.env.EMAIL_PASS || '').trim();
     const fromSender = String(process.env.SENDER_EMAIL || user || '').trim();
 
-    if (!host || !user || !pass || !fromSender) {
-        throw new Error('Node SMTP config missing (EMAIL_HOST/EMAIL_USER/EMAIL_PASS/SENDER_EMAIL).');
+    if (!user || !pass || !fromSender) {
+        throw new Error('Node SMTP config missing (EMAIL_USER/EMAIL_PASS/SENDER_EMAIL).');
     }
 
     const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure,
-        requireTLS: !secure,   // force STARTTLS on port 587
+        service: 'gmail',        // Uses smtp.gmail.com:465 (SSL) automatically
         auth: { user, pass },
         tls: { rejectUnauthorized: false },
         connectionTimeout: 15000,

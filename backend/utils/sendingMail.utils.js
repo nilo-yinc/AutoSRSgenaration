@@ -4,14 +4,8 @@ dns.setDefaultResultOrder("ipv4first"); // Force IPv4 - Render free tier blocks 
 const nodemailer = require("nodemailer");
 
 const buildTransporter = () => {
-  const port = Number(process.env.EMAIL_PORT || 587);
-  const isSecure = String(process.env.EMAIL_SECURE || "false").toLowerCase() === "true";
-
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port,
-    secure: isSecure,        // true for 465, false for 587 (STARTTLS)
-    requireTLS: !isSecure,   // force STARTTLS on port 587
+    service: "gmail",          // Uses smtp.gmail.com:465 (SSL) automatically
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -19,11 +13,9 @@ const buildTransporter = () => {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 15000,  // 15 s to establish TCP connection
-    greetingTimeout: 15000,    // 15 s for server EHLO response
-    socketTimeout: 30000,      // 30 s per socket I/O operation
-    logger: process.env.NODE_ENV !== "production",
-    debug: process.env.NODE_ENV !== "production",
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000,
   });
 };
 

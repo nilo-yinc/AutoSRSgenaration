@@ -169,12 +169,9 @@ def send_review_email(
             )
 
     try:
-        # Force IPv4 resolution - Render free tier blocks IPv6 to Gmail
-        ipv4_addr = socket.getaddrinfo(host, port, socket.AF_INET)[0][4][0]
-        with smtplib.SMTP(ipv4_addr, port, timeout=30) as server:
-            server.ehlo(host)  # Use original hostname for EHLO
-            server.starttls()
-            server.ehlo(host)
+        # Use SMTP_SSL on port 465 — port 587 (STARTTLS) is blocked on Render
+        ipv4_addr = socket.getaddrinfo(host, 465, socket.AF_INET)[0][4][0]
+        with smtplib.SMTP_SSL(ipv4_addr, 465, timeout=30) as server:
             server.login(user, password)
             server.send_message(msg)
     except smtplib.SMTPException as e:
