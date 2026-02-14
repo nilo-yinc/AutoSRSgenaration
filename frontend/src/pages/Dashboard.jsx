@@ -147,15 +147,35 @@ const Dashboard = () => {
                     </div>
 
                     <div>
-                        <h3 className="text-[10px] font-bold text-[#8b949e] uppercase tracking-[0.2em] mb-4">Summary</h3>
+                        <h3 className="text-[10px] font-bold text-[#8b949e] uppercase tracking-[0.2em] mb-4">Project Summary</h3>
                         <div className="bg-[#161b22] rounded-xl border border-[#30363d] p-4 text-xs space-y-3">
-                            <div className="flex justify-between">
-                                <span className="text-[#8b949e]">Total Projects</span>
-                                <span className="text-white font-mono">{projects.length}</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[#8b949e] flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#8b949e]"></div> Total Projects</span>
+                                <span className="text-white font-mono font-bold">{projects.length}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-[#8b949e]">Storage Used</span>
-                                <span className="text-white font-mono">1.2 MB / 10 MB</span>
+                            <div className="h-px bg-[#30363d] my-2"></div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[#8b949e] flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#e3b341]"></div> In Progress</span>
+                                <span className="text-white font-mono">{projects.filter(p => !['APPROVED', 'IN_REVIEW'].includes(p.status)).length}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[#8b949e] flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#ba3c5a]"></div> In Review</span>
+                                <span className="text-white font-mono">{projects.filter(p => p.status === 'IN_REVIEW' || p.status === 'CHANGES_REQUESTED').length}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[#8b949e] flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#238636]"></div> Approved</span>
+                                <span className="text-white font-mono">{projects.filter(p => p.status === 'APPROVED').length}</span>
+                            </div>
+                        </div>
+
+                        <div className="mt-6">
+                            <h3 className="text-[10px] font-bold text-[#8b949e] uppercase tracking-[0.2em] mb-4">System Status</h3>
+                            <div className="flex items-center gap-2 text-xs text-[#3fb950] bg-[#3fb950]/10 border border-[#3fb950]/20 p-2 rounded-lg">
+                                <div className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
+                                </div>
+                                <span className="font-medium">All Systems Operational</span>
                             </div>
                         </div>
                     </div>
@@ -200,7 +220,7 @@ const Dashboard = () => {
                                             }}
                                             className="w-full py-3 bg-[#1f6feb] text-white rounded-lg font-bold hover:bg-[#388bfd] transition shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
                                         >
-                                            <Sparkles size={16} /> Create First Project
+                                            <Plus size={16} /> Create First Project
                                         </button>
                                     </div>
                                 </div>
