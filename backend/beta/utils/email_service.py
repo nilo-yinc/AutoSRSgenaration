@@ -1,4 +1,5 @@
 import os
+import socket
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
@@ -168,10 +169,12 @@ def send_review_email(
             )
 
     try:
-        with smtplib.SMTP(host, port, timeout=30) as server:
-            server.ehlo()
+        # Force IPv4 resolution - Render free tier blocks IPv6 to Gmail
+        ipv4_addr = socket.getaddrinfo(host, port, socket.AF_INET)[0][4][0]
+        with smtplib.SMTP(ipv4_addr, port, timeout=30) as server:
+            server.ehlo(host)  # Use original hostname for EHLO
             server.starttls()
-            server.ehlo()
+            server.ehlo(host)
             server.login(user, password)
             server.send_message(msg)
     except smtplib.SMTPException as e:

@@ -1,4 +1,6 @@
 // email sending using nodemailer
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first"); // Force IPv4 - Render free tier blocks IPv6 to Gmail
 const nodemailer = require("nodemailer");
 
 const buildTransporter = () => {

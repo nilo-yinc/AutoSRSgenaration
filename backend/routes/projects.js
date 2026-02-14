@@ -3,6 +3,8 @@ const router = express.Router();
 const isLoggedIn = require('../middlewares/isLoggedIn.middleware');
 const Project = require('../models/Project');
 const axios = require('axios');
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first'); // Force IPv4 - Render blocks IPv6 to Gmail
 const nodemailer = require('nodemailer');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { deleteDocxById, markDocxExpireAt, uploadDocxBuffer } = require('../utils/docxGridfs');
