@@ -75,7 +75,6 @@ app.post('/api/v1/users/request-password-otp', isLoggedIn, requestPasswordOTP);
 app.post('/api/v1/users/verify-password-otp', isLoggedIn, verifyPasswordOTP);
 
 // Fallback explicit route for project fetch (in case router mismatch)
-const Project = require('./models/Project');
 app.get('/api/projects/:id', isLoggedIn, async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
