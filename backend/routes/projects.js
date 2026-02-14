@@ -666,7 +666,7 @@ router.get('/:id/hq-status', isLoggedIn, async (req, res) => {
 });
 
 // @route   POST /api/projects/:id/send-review
-// @desc    Sync project to Python and trigger workflow review email from server-side
+// @desc    Send review email directly from Node (no Python dependency)
 // @access  Private
 router.post('/:id/send-review', isLoggedIn, async (req, res) => {
     try {
@@ -680,88 +680,29 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
             senderEmail,
             senderName,
             projectName,
-            insights,
-            notes,
-            isUpdate = false,
             isResend = false
         } = req.body || {};
 
         if (!clientEmail) return res.status(400).json({ msg: 'Client email is required' });
 
-        const pyBase = getPyBase();
-
-        // Warm up Python backend first (important on Render free-tier cold start)
-        try {
-            await axios.get(`${pyBase}/health`, { timeout: 45000 });
-        } catch (_) {}
-
-        // Best-effort sync to Python project store; continue even if this step fails.
-        let syncWarning = null;
-        try {
-            await callPythonWithRetry(() => axios.post(`${pyBase}/api/project/create`, {
-                id: project._id.toString(),
-                name: project.title || projectName || 'DocuVerse Project',
-                content: project.contentMarkdown || buildMarkdownFromSrsRequest(project.enterpriseData || {}),
-                documentUrl: project.documentUrl || documentLink || undefined,
-                status: project.status || 'DRAFT',
-                reviewedDocumentUrl: project.reviewedDocumentUrl,
-                clientEmail: clientEmail,
-                workflowEvents: project.workflowEvents || [],
-                reviewFeedback: project.reviewFeedback || []
-            }, { timeout: 35000 }), 0);
-        } catch (syncErr) {
-            syncWarning = syncErr?.response?.data?.detail || syncErr?.message || 'Project sync warning';
-            console.warn('Project sync failed, proceeding with review send:', syncWarning);
-        }
-
-        const endpoint = isResend ? '/api/workflow/resend-review' : '/api/workflow/start-review';
-        let wfRes = null;
-        let directFallbackUsed = false;
         const finalDocumentLink = project.documentUrl || documentLink || undefined;
+        const finalProjectName = projectName || project.title || 'DocuVerse Project';
+        const finalSenderName = senderName || req.user.name || 'DocuVerse User';
+        const finalSenderEmail = senderEmail || req.user.email || undefined;
 
-        try {
-            wfRes = await callPythonWithRetry(() => axios.post(`${pyBase}${endpoint}`, {
-                projectId: project._id.toString(),
-                clientEmail,
-                documentLink: finalDocumentLink,
-                senderEmail: senderEmail || req.user.email || undefined,
-                senderName: senderName || req.user.name || undefined,
-                projectName: projectName || project.title || undefined,
-                insights: insights || [],
-                notes: notes || project.contentMarkdown || '',
-                isUpdate
-            }, { timeout: getPyWorkflowTimeoutMs() }), 1);
+        // Send email directly from Node — fast and reliable
+        await sendReviewEmailDirectFromNode({
+            toEmail: clientEmail,
+            subject: isResend
+                ? `[Revised] DocuVerse Review Update: ${finalProjectName}`
+                : `[Action Required] DocuVerse Review: ${finalProjectName}`,
+            senderName: finalSenderName,
+            senderEmail: finalSenderEmail,
+            documentLink: finalDocumentLink,
+            projectName: finalProjectName
+        });
 
-            // If Python reports email warning, fallback to direct Node SMTP send.
-            if (wfRes?.data?.warning) {
-                await sendReviewEmailDirectFromNode({
-                    toEmail: clientEmail,
-                    subject: isResend
-                        ? `[Revised] DocuVerse Review Update: ${projectName || project.title || 'DocuVerse Project'}`
-                        : `[Action Required] DocuVerse Review: ${projectName || project.title || 'DocuVerse Project'}`,
-                    senderName: senderName || req.user.name || 'DocuVerse User',
-                    senderEmail: senderEmail || req.user.email || undefined,
-                    documentLink: finalDocumentLink,
-                    projectName: projectName || project.title || 'DocuVerse Project'
-                });
-                directFallbackUsed = true;
-            }
-        } catch (wfErr) {
-            // Python workflow failed entirely -> direct Node SMTP fallback.
-            await sendReviewEmailDirectFromNode({
-                toEmail: clientEmail,
-                subject: isResend
-                    ? `[Revised] DocuVerse Review Update: ${projectName || project.title || 'DocuVerse Project'}`
-                    : `[Action Required] DocuVerse Review: ${projectName || project.title || 'DocuVerse Project'}`,
-                senderName: senderName || req.user.name || 'DocuVerse User',
-                senderEmail: senderEmail || req.user.email || undefined,
-                documentLink: finalDocumentLink,
-                projectName: projectName || project.title || 'DocuVerse Project'
-            });
-            directFallbackUsed = true;
-            wfRes = { data: { warning: `Python workflow failed; Node SMTP fallback used (${wfErr?.message || 'unknown error'}).` } };
-        }
-
+        // Update project status
         project.clientEmail = clientEmail;
         project.status = 'IN_REVIEW';
         project.workflowEvents = project.workflowEvents || [];
@@ -773,25 +714,26 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
         });
         await project.save();
 
+        // Fire-and-forget: sync to Python in background (don't wait)
+        const pyBase = getPyBase();
+        axios.post(`${pyBase}/api/project/create`, {
+            id: project._id.toString(),
+            name: finalProjectName,
+            content: project.contentMarkdown || '',
+            documentUrl: finalDocumentLink,
+            status: 'IN_REVIEW',
+            clientEmail
+        }, { timeout: 30000 }).catch(() => {});
+
         res.json({
             status: 'IN_REVIEW',
-            message: isResend ? 'Review resent successfully.' : 'Review sent successfully.',
-            warning: directFallbackUsed
-                ? (wfRes?.data?.warning || 'Node SMTP fallback used.')
-                : (wfRes?.data?.warning || syncWarning || null)
+            message: isResend ? 'Review resent successfully.' : 'Review sent successfully.'
         });
     } catch (err) {
-        console.error('Send review failed:', err?.response?.data || err?.message || err);
-        const isTimeout = err?.code === 'ECONNABORTED' || String(err?.message || '').toLowerCase().includes('timeout');
-        if (isTimeout) {
-            return res.status(504).json({
-                msg: 'Failed to send review',
-                detail: `Review service timed out. Please retry in 20-40 seconds (Render cold start).`,
-            });
-        }
+        console.error('Send review failed:', err?.message || err);
         res.status(500).json({
             msg: 'Failed to send review',
-            detail: err?.response?.data?.detail || err?.response?.data?.warning || err?.message || 'Unknown error'
+            detail: err?.message || 'Unknown error'
         });
     }
 });
