@@ -17,6 +17,31 @@ const Dashboard = () => {
     const [showProfile, setShowProfile] = useState(false);
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
+    const normalizeProjects = (raw) => {
+        if (!Array.isArray(raw)) return [];
+        return raw.map((project) => ({
+            ...project,
+            _id: String(project?._id || ''),
+            title: typeof project?.title === 'string' ? project.title : (project?.title ? String(project.title) : 'Untitled Project'),
+            domain: typeof project?.domain === 'string' ? project.domain : (project?.domain ? String(project.domain) : 'N/A'),
+            isPublic: Boolean(project?.isPublic),
+            updatedAt: project?.updatedAt || null,
+            techStack: project?.techStack
+        }));
+    };
+
+    const safeText = (value, fallback = 'N/A') => {
+        if (typeof value === 'string') return value || fallback;
+        if (value === null || value === undefined) return fallback;
+        if (typeof value === 'object') return fallback;
+        return String(value);
+    };
+
+    const safeDateText = (value) => {
+        if (!value) return 'Last edited recently';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? 'Last edited recently' : `Last edited ${date.toLocaleString()}`;
+    };
 
     useEffect(() => {
         console.log("Dashboard mounted. Token:", token ? "Present" : "Missing", "User:", user);
@@ -35,7 +60,7 @@ const Dashboard = () => {
                     }
                 });
                 console.log("Projects fetched:", res.data);
-                setProjects(res.data);
+                setProjects(normalizeProjects(res.data));
             } catch (err) {
                 console.error("Failed to fetch projects", err);
             } finally {
@@ -230,7 +255,7 @@ const Dashboard = () => {
                                 <AnimatePresence>
                                     {projects.map((project, idx) => (
                                         <motion.div
-                                            key={project._id}
+                                            key={project._id || `${idx}`}
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.05 }}
@@ -247,10 +272,10 @@ const Dashboard = () => {
                                                         <FileText size={20} className="text-[#58a6ff]" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-white font-bold group-hover:text-[#58a6ff] transition-colors line-clamp-1">{project.title}</h4>
+                                                        <h4 className="text-white font-bold group-hover:text-[#58a6ff] transition-colors line-clamp-1">{safeText(project.title, 'Untitled Project')}</h4>
                                                         <div className="flex items-center gap-2 text-[10px] text-[#8b949e]">
                                                             <Clock size={10} />
-                                                            <span>Last edited {new Date(project.updatedAt).toLocaleString()}</span>
+                                                            <span>{safeDateText(project.updatedAt)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -258,7 +283,7 @@ const Dashboard = () => {
                                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                                     <div className="bg-[#0d1117] rounded-lg p-2 border border-[#30363d]">
                                                         <div className="text-[9px] text-[#8b949e] uppercase font-bold mb-1">Domain</div>
-                                                        <div className="text-xs text-white truncate">{project.domain || 'N/A'}</div>
+                                                        <div className="text-xs text-white truncate">{safeText(project.domain, 'N/A')}</div>
                                                     </div>
                                                     <div className="bg-[#0d1117] rounded-lg p-2 border border-[#30363d]">
                                                         <div className="text-[9px] text-[#8b949e] uppercase font-bold mb-1">Tech Stack</div>
