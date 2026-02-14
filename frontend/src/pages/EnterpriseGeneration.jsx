@@ -75,7 +75,7 @@ const EnterpriseGeneration = () => {
         try {
             if (mode === 'quick') {
                 setStatus('processing');
-                setProgress(8);
+                setProgress(0);
                 setMessage("Initializing Generator...");
                 if (!timerRef.current) {
                     timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);

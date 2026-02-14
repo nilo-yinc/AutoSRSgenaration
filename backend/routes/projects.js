@@ -98,6 +98,16 @@ const buildMarkdownFromSrsRequest = (srsRequest) => {
 };
 
 const getPyBase = () => String(process.env.PY_API_BASE || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+const getPyGenerateTimeoutMs = () => {
+    const raw = Number(process.env.PY_GENERATE_TIMEOUT_MS || 300000);
+    if (!Number.isFinite(raw) || raw < 60000) return 300000;
+    return raw;
+};
+const getPyWorkflowTimeoutMs = () => {
+    const raw = Number(process.env.PY_WORKFLOW_TIMEOUT_MS || 70000);
+    if (!Number.isFinite(raw) || raw < 15000) return 70000;
+    return raw;
+};
 
 const toAbsolutePyUrl = (relativeOrAbsolute) => {
     if (!relativeOrAbsolute) return null;
@@ -383,23 +393,36 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
         // In production free-tier environments, full mode can fail due cold-start/limits.
         // Fallback: if full fails, retry quick mode automatically.
         const pyBase = String(process.env.PY_API_BASE || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+        const pyGenerateTimeout = getPyGenerateTimeoutMs();
+
+        // Warm up Python backend (helps on Render free-tier spin-up)
+        try {
+            await axios.get(`${pyBase}/health`, { timeout: 65000 });
+        } catch (_) {}
+
         let pythonResponse;
         let usedMode = mode;
         let modeFallbackWarning = null;
         try {
-            pythonResponse = await axios.post(
-                `${pyBase}/generate_srs?mode=${encodeURIComponent(mode)}`,
-                srsRequest,
-                { timeout: 120000 }
+            pythonResponse = await callPythonWithRetry(
+                () => axios.post(
+                    `${pyBase}/generate_srs?mode=${encodeURIComponent(mode)}`,
+                    srsRequest,
+                    { timeout: pyGenerateTimeout }
+                ),
+                2
             );
         } catch (firstErr) {
             if (mode === 'full') {
                 modeFallbackWarning = 'Full mode failed; quick mode fallback used.';
                 usedMode = 'quick';
-                pythonResponse = await axios.post(
-                    `${pyBase}/generate_srs?mode=quick`,
-                    srsRequest,
-                    { timeout: 120000 }
+                pythonResponse = await callPythonWithRetry(
+                    () => axios.post(
+                        `${pyBase}/generate_srs?mode=quick`,
+                        srsRequest,
+                        { timeout: pyGenerateTimeout }
+                    ),
+                    2
                 );
             } else {
                 throw firstErr;
@@ -443,12 +466,21 @@ router.post('/enterprise/generate', isLoggedIn, async (req, res) => {
 
     } catch (err) {
         console.error("Enterprise Generation ERROR [FULL]:", err);
+        const errCode = err?.code || '';
+        const isTimeout = errCode === 'ECONNABORTED' || String(err?.message || '').toLowerCase().includes('timeout');
         if (err.response) {
             console.error("Python Backend Error Data:", err.response.data);
             return res.status(500).json({ 
                 msg: 'Generation Engine Failed', 
                 details: err.response.data,
                 error: err.message 
+            });
+        }
+        if (isTimeout) {
+            return res.status(504).json({
+                msg: 'Generation Engine Timed Out',
+                details: `Python generation exceeded timeout (${getPyGenerateTimeoutMs()} ms).`,
+                error: err.message
             });
         }
         res.status(500).json({ 
@@ -563,7 +595,7 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
 
         // Warm up Python backend first (important on Render free-tier cold start)
         try {
-            await axios.get(`${pyBase}/health`, { timeout: 65000 });
+            await axios.get(`${pyBase}/health`, { timeout: 45000 });
         } catch (_) {}
 
         // Best-effort sync to Python project store; continue even if this step fails.
@@ -579,7 +611,7 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
                 clientEmail: clientEmail,
                 workflowEvents: project.workflowEvents || [],
                 reviewFeedback: project.reviewFeedback || []
-            }, { timeout: 120000 }), 3);
+            }, { timeout: 35000 }), 0);
         } catch (syncErr) {
             syncWarning = syncErr?.response?.data?.detail || syncErr?.message || 'Project sync warning';
             console.warn('Project sync failed, proceeding with review send:', syncWarning);
@@ -596,7 +628,7 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
             insights: insights || [],
             notes: notes || project.contentMarkdown || '',
             isUpdate
-        }, { timeout: 180000 }), 3);
+        }, { timeout: getPyWorkflowTimeoutMs() }), 1);
 
         project.clientEmail = clientEmail;
         project.status = 'IN_REVIEW';
@@ -616,6 +648,13 @@ router.post('/:id/send-review', isLoggedIn, async (req, res) => {
         });
     } catch (err) {
         console.error('Send review failed:', err?.response?.data || err?.message || err);
+        const isTimeout = err?.code === 'ECONNABORTED' || String(err?.message || '').toLowerCase().includes('timeout');
+        if (isTimeout) {
+            return res.status(504).json({
+                msg: 'Failed to send review',
+                detail: `Review service timed out. Please retry in 20-40 seconds (Render cold start).`,
+            });
+        }
         res.status(500).json({
             msg: 'Failed to send review',
             detail: err?.response?.data?.detail || err?.response?.data?.warning || err?.message || 'Unknown error'

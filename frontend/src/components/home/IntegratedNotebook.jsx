@@ -499,7 +499,7 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
                 isResend: wasInReview
             }, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
-                timeout: 120000
+                timeout: 180000
             });
 
             const eventTitle = wasInReview ? "Review Resent" : "Review Sent";
@@ -532,6 +532,9 @@ const IntegratedNotebook = ({ initialContent, projectId, projectName, currentUse
             console.error("Failed to send review", error);
             const status = error?.response?.status;
             const errMsg = error.response?.data?.detail || error.response?.data?.msg ||
+                (error?.code === 'ECONNABORTED'
+                    ? "Request timed out. Backend is likely waking up; wait 20-40s and retry."
+                    : null) ||
                 (status === 502
                     ? "Python service is waking up or unreachable. Wait 30-60s and retry."
                     : "Failed to send review. Check backend logs and SMTP settings.");
