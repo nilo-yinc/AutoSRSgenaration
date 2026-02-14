@@ -167,9 +167,14 @@ def send_review_email(
                 filename=filename
             )
 
-    with smtplib.SMTP(host, port) as server:
-        server.ehlo() # Identify self to server
-        server.starttls()
-        server.ehlo() # Re-identify after TLS
-        server.login(user, password)
-        server.send_message(msg)
+    try:
+        with smtplib.SMTP(host, port, timeout=30) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(user, password)
+            server.send_message(msg)
+    except smtplib.SMTPException as e:
+        raise RuntimeError(f"SMTP error sending email to {to_email}: {e}") from e
+    except Exception as e:
+        raise RuntimeError(f"Failed to send email to {to_email}: {e}") from e

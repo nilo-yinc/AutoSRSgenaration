@@ -2,10 +2,14 @@
 const nodemailer = require("nodemailer");
 
 const buildTransporter = () => {
+  const port = Number(process.env.EMAIL_PORT || 587);
+  const isSecure = String(process.env.EMAIL_SECURE || "false").toLowerCase() === "true";
+
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT),
-    secure: String(process.env.EMAIL_SECURE || "false").toLowerCase() === "true",
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port,
+    secure: isSecure,        // true for 465, false for 587 (STARTTLS)
+    requireTLS: !isSecure,   // force STARTTLS on port 587
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -13,6 +17,11 @@ const buildTransporter = () => {
     tls: {
       rejectUnauthorized: false,
     },
+    connectionTimeout: 15000,  // 15 s to establish TCP connection
+    greetingTimeout: 15000,    // 15 s for server EHLO response
+    socketTimeout: 30000,      // 30 s per socket I/O operation
+    logger: process.env.NODE_ENV !== "production",
+    debug: process.env.NODE_ENV !== "production",
   });
 };
 

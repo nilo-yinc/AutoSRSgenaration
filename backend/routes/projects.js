@@ -180,7 +180,12 @@ const sendReviewEmailDirectFromNode = async ({
         host,
         port,
         secure,
+        requireTLS: !secure,   // force STARTTLS on port 587
         auth: { user, pass },
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 30000,
     });
 
     const absoluteDocLink = toAbsoluteNodeDocLink(documentLink);
