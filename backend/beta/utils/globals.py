@@ -1,8 +1,10 @@
 from google.genai import types
 from google.adk.runners import Runner
 from google.adk.agents import SequentialAgent , ParallelAgent
+import base64
 import json , shutil , re , subprocess
 from pathlib import Path
+import requests
 
 
 
@@ -267,12 +269,22 @@ def render_mermaid_png(mermaid_code: str, output_png: Path):
     Renders Mermaid code into a PNG file using mmdc (npm).
     Uses PATH first so it works on any machine; no hardcoded paths.
     """
+    def _render_with_mermaid_ink():
+        encoded = base64.urlsafe_b64encode(mermaid_code.encode("utf-8")).decode("utf-8")
+        url = f"https://mermaid.ink/img/{encoded}?type=png"
+        resp = requests.get(url, timeout=45)
+        resp.raise_for_status()
+        if not resp.content:
+            raise RuntimeError("Empty image response from mermaid.ink")
+        output_png.write_bytes(resp.content)
+        print(f"✅ Mermaid diagram saved via mermaid.ink: {output_png}")
+
     mmdc_path = shutil.which("mmdc") or shutil.which("mmdc.cmd")
     if not mmdc_path:
-        raise FileNotFoundError(
-            "mmdc command not found. Install it with: npm install -g @mermaid-js/mermaid-cli\n"
-            "Then ensure npm global bin is in your PATH (e.g. on Windows: %%APPDATA%%\\npm)."
-        )
+        print("⚠️ mmdc not found; using mermaid.ink fallback")
+        output_png.parent.mkdir(parents=True, exist_ok=True)
+        _render_with_mermaid_ink()
+        return
     
     output_png.parent.mkdir(parents=True, exist_ok=True)
     mmd_path = output_png.with_suffix(".mmd")
@@ -305,4 +317,5 @@ def render_mermaid_png(mermaid_code: str, output_png: Path):
     except subprocess.CalledProcessError as e:
         print(f"❌ mmdc error: {e.stderr}")
         print(f"Command that failed: {' '.join(cmd)}")
-        raise
+        print("⚠️ Falling back to mermaid.ink rendering...")
+        _render_with_mermaid_ink()
