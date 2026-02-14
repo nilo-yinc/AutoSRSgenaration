@@ -1,55 +1,55 @@
-// Email sending via Resend HTTP API (Render blocks SMTP, Brevo needs activation)
-const RESEND_API_URL = "https://api.resend.com/emails";
+// Email sending via Google Apps Script gateway (HTTPS → Gmail)
+// Works on ANY hosting (Render, Vercel, etc.) — no SMTP, no domain verification
 
 /**
- * Send an email via Resend's REST API.
- * Uses fetch() over HTTPS — works on every hosting platform.
+ * Send an email via the Google Apps Script web app gateway.
+ * The Apps Script calls GmailApp.sendEmail() internally.
  */
-const sendViaResend = async ({ from, fromName, to, subject, html, text, replyTo, attachments }) => {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY is not set");
+const sendViaGateway = async ({ to, subject, html, text, fromName, replyTo, attachments }) => {
+  const gatewayUrl = process.env.GMAIL_APPS_SCRIPT_URL;
+  const token = process.env.GMAIL_APPS_SCRIPT_TOKEN || 'docuverse-email-secret-2026';
 
-  // Resend free tier: use onboarding@resend.dev or a verified domain
-  const senderEmail = from || process.env.RESEND_FROM || "DocuVerse <onboarding@resend.dev>";
-  const senderFormatted = fromName
-    ? `${fromName} <${senderEmail.includes("<") ? senderEmail.match(/<(.+)>/)?.[1] || senderEmail : senderEmail}>`
-    : senderEmail;
+  if (!gatewayUrl) throw new Error("GMAIL_APPS_SCRIPT_URL is not set");
 
   const body = {
-    from: senderFormatted,
-    to: Array.isArray(to) ? to : [to],
+    token,
+    to,
     subject,
     html: html || undefined,
     text: text || undefined,
-    reply_to: replyTo || undefined,
+    fromName: fromName || 'DocuVerse',
+    replyTo: replyTo || undefined,
   };
 
-  // Resend attachments: [{ filename, content (base64 string) }]
+  // Attachments: [{ filename, content (base64), contentType }]
   if (attachments && attachments.length > 0) {
     body.attachments = attachments.map((a) => ({
       filename: a.filename || "document.docx",
       content: Buffer.isBuffer(a.content)
         ? a.content.toString("base64")
         : a.content,
+      contentType: a.contentType || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     }));
   }
 
-  const resp = await fetch(RESEND_API_URL, {
+  const resp = await fetch(gatewayUrl, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    redirect: 'follow',  // Apps Script redirects on POST
   });
 
   if (!resp.ok) {
     const errText = await resp.text();
-    throw new Error(`Resend API error ${resp.status}: ${errText}`);
+    throw new Error(`Gmail gateway error ${resp.status}: ${errText}`);
   }
 
   const result = await resp.json();
-  console.log("Resend email sent:", result.id || JSON.stringify(result));
+  if (result.error) {
+    throw new Error(`Gmail gateway error: ${result.error}`);
+  }
+
+  console.log("Email sent via Gmail gateway:", JSON.stringify(result));
   return result;
 };
 
@@ -96,7 +96,7 @@ const sendVerificationEmail = async (email, token) => {
   try {
     const verificationUrl = `${process.env.BASE_URL}/api/v1/users/verify/${token}`;
 
-    await sendViaResend({
+    await sendViaGateway({
       to: email,
       subject: "Please verify your email address",
       text: `Thank you for registering! Please verify your email address: ${verificationUrl}\nThis link expires in 10 minutes.`,
@@ -127,7 +127,7 @@ const sendVerificationEmail = async (email, token) => {
 
 const sendPasswordOTP = async (email, otp) => {
   try {
-    await sendViaResend({
+    await sendViaGateway({
       to: email,
       subject: "Your password verification code",
       text: `Your verification code is ${otp}. It expires in 10 minutes.`,
@@ -161,7 +161,7 @@ const sendSuggestionAcknowledgement = async ({ email, name, title, priority }) =
     const safeTitle = title || "your idea";
     const safePriority = priority || "Medium";
 
-    await sendViaResend({
+    await sendViaGateway({
       to: email,
       subject: "Thank you for your suggestion",
       text: `Hi ${safeName},\n\nThank you for sharing your suggestion with DocuVerse.\n\nSuggestion: ${safeTitle}\nPriority: ${safePriority}\n\nWe received it successfully and our team will review it soon.\n\nRegards,\nDocuVerse Team`,

@@ -165,21 +165,20 @@ const sendReviewEmailDirectFromNode = async ({
     projectName,
     docxBuffer
 }) => {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) throw new Error('RESEND_API_KEY is not set');
-
-    // Resend free tier: use onboarding@resend.dev or a verified domain
-    const fromAddress = process.env.RESEND_FROM || 'DocuVerse <onboarding@resend.dev>';
+    const gatewayUrl = process.env.GMAIL_APPS_SCRIPT_URL;
+    const token = process.env.GMAIL_APPS_SCRIPT_TOKEN || 'docuverse-email-secret-2026';
+    if (!gatewayUrl) throw new Error('GMAIL_APPS_SCRIPT_URL is not set');
 
     const absoluteDocLink = toAbsoluteNodeDocLink(documentLink);
     const safeSenderName = senderName || 'DocuVerse User';
     const safeProjectName = projectName || 'DocuVerse Project';
 
     const body = {
-        from: fromAddress,
-        to: [toEmail],
-        reply_to: senderEmail || undefined,
+        token,
+        to: toEmail,
         subject,
+        fromName: 'DocuVerse',
+        replyTo: senderEmail || undefined,
         html: `
           <div style="font-family:Arial,sans-serif;color:#111">
             <h2>DocuVerse Review Request</h2>
@@ -192,32 +191,35 @@ const sendReviewEmailDirectFromNode = async ({
         text: `DocuVerse review request for ${safeProjectName}. Document: ${absoluteDocLink}`,
     };
 
-    // Attach DOCX directly from buffer (base64 for Resend)
+    // Attach DOCX directly from buffer (base64 for Apps Script)
     if (docxBuffer && docxBuffer.length > 0) {
         body.attachments = [{
             filename: extractFilenameFromLink(absoluteDocLink) || 'SRS_Document.docx',
             content: Buffer.isBuffer(docxBuffer)
                 ? docxBuffer.toString('base64')
-                : docxBuffer
+                : docxBuffer,
+            contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         }];
     }
 
-    const resp = await fetch('https://api.resend.com/emails', {
+    const resp = await fetch(gatewayUrl, {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        redirect: 'follow'
     });
 
     if (!resp.ok) {
         const errText = await resp.text();
-        throw new Error(`Resend API error ${resp.status}: ${errText}`);
+        throw new Error(`Gmail gateway error ${resp.status}: ${errText}`);
     }
 
     const result = await resp.json();
-    console.log('Review email sent via Resend:', result.id || JSON.stringify(result));
+    if (result.error) {
+        throw new Error(`Gmail gateway error: ${result.error}`);
+    }
+
+    console.log('Review email sent via Gmail gateway:', JSON.stringify(result));
 };
 
 const applyDocFromPythonToProject = async (project, pyDownloadUrl) => {
